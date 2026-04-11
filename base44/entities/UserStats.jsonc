@@ -1,0 +1,65 @@
+{
+  "name": "UserStats",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "total_correct": {
+      "type": "number",
+      "default": 0
+    },
+    "total_wrong": {
+      "type": "number",
+      "default": 0
+    },
+    "total_missed": {
+      "type": "number",
+      "default": 0
+    },
+    "total_points": {
+      "type": "number",
+      "default": 0
+    },
+    "current_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "highest_streak": {
+      "type": "number",
+      "default": 0
+    },
+    "badges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "quick_challenge_score": {
+      "type": "number",
+      "default": 0
+    },
+    "quick_challenge_time": {
+      "type": "number",
+      "default": 0
+    },
+    "memory_best_time": {
+      "type": "number",
+      "default": 0
+    },
+    "consecutive_days_from_start": {
+      "type": "number",
+      "default": 0,
+      "description": "First 15 consecutive days count"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

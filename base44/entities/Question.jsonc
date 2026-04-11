@@ -1,0 +1,66 @@
+{
+  "name": "Question",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "description": "Question text"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "multiple_choice",
+        "true_false",
+        "essay"
+      ],
+      "description": "Question type"
+    },
+    "options": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Answer options for MC"
+    },
+    "correct_answer": {
+      "type": "string",
+      "description": "Correct answer"
+    },
+    "points": {
+      "type": "number",
+      "description": "Points value"
+    },
+    "day_number": {
+      "type": "number",
+      "description": "Competition day (1-29)"
+    },
+    "time_limit": {
+      "type": "number",
+      "description": "Time limit in seconds",
+      "default": 90
+    },
+    "publish_date": {
+      "type": "string",
+      "description": "Date to publish (YYYY-MM-DD)"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "closed"
+      ],
+      "default": "draft"
+    }
+  },
+  "required": [
+    "text",
+    "type",
+    "correct_answer",
+    "day_number"
+  ]
+}

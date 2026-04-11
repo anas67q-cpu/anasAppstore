@@ -1,0 +1,40 @@
+{
+  "name": "Answer",
+  "type": "object",
+  "properties": {
+    "question_id": {
+      "type": "string",
+      "description": "Reference to Question"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "User email"
+    },
+    "user_answer": {
+      "type": "string",
+      "description": "The answer given"
+    },
+    "is_correct": {
+      "type": "boolean",
+      "description": "Whether answer is correct"
+    },
+    "points_earned": {
+      "type": "number",
+      "description": "Points earned"
+    },
+    "time_taken": {
+      "type": "number",
+      "description": "Time taken in seconds"
+    },
+    "day_number": {
+      "type": "number",
+      "description": "Competition day"
+    }
+  },
+  "required": [
+    "question_id",
+    "user_email",
+    "user_answer",
+    "day_number"
+  ]
+}

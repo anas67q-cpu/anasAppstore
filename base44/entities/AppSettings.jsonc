@@ -1,0 +1,33 @@
+{
+  "name": "AppSettings",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Setting key"
+    },
+    "value": {
+      "type": "string",
+      "description": "Setting value"
+    },
+    "quick_challenge_image": {
+      "type": "string",
+      "description": "URL for quick challenge card"
+    },
+    "memory_challenge_image": {
+      "type": "string",
+      "description": "URL for memory challenge card"
+    },
+    "leaderboard_shield": {
+      "type": "string",
+      "description": "URL for leaderboard shield image"
+    },
+    "competition_start_date": {
+      "type": "string",
+      "description": "Competition start date"
+    }
+  },
+  "required": [
+    "key"
+  ]
+}
