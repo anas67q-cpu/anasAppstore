@@ -13,12 +13,12 @@ export default function GreetingSection({ userName }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="px-1"
-    >
+      className="px-1">
+      
       <p className="text-muted-foreground text-sm font-light">{getGreeting()}</p>
       <h1 className="text-2xl font-bold text-foreground mt-0.5">
         {userName || 'مرحباً'}
       </h1>
-    </motion.div>
-  );
+    </motion.div>);
+
 }
