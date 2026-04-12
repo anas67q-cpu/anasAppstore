@@ -27,8 +27,8 @@ function getPointsForDay(d) {
   if (d <= 10) return 1; if (d <= 20) return 2; if (d <= 28) return 3; return 5;
 }
 
-function getOpenedKey(questionId) {
-  return `opened_q_${questionId}`;
+function getOpenedKey(questionId, userEmail) {
+  return `opened_q_${questionId}_${userEmail}`;
 }
 
 export default function DailyQuestion({ questions, answers, user, stats, setStats, setAnswers, refreshStats }) {
@@ -49,8 +49,8 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   useEffect(() => {
     if (!todayQ) { setPhase('waiting'); return; }
     if (todayA) { setPhase('result'); return; }
-    // Check if user already opened this question
-    const alreadyOpened = localStorage.getItem(getOpenedKey(todayQ.id));
+    // Check if user already opened this question (per-user key)
+    const alreadyOpened = localStorage.getItem(getOpenedKey(todayQ.id, user.email));
     if (alreadyOpened) {
       setPhase('answering');
     } else {
@@ -67,7 +67,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
 
   useEffect(() => {
     if (phase !== 'answering' || todayA) return;
-    const stored = todayQ?.id ? localStorage.getItem(getOpenedKey(todayQ.id) + '_time') : null;
+    const stored = todayQ?.id ? localStorage.getItem(getOpenedKey(todayQ.id, user.email) + '_time') : null;
     const limit = todayQ?.time_limit || 90;
     let startLeft = limit;
     if (stored) {
@@ -88,8 +88,8 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const startAnswering = () => {
     playTap();
     if (todayQ) {
-      localStorage.setItem(getOpenedKey(todayQ.id), '1');
-      localStorage.setItem(getOpenedKey(todayQ.id) + '_time', Date.now().toString());
+      localStorage.setItem(getOpenedKey(todayQ.id, user.email), '1');
+      localStorage.setItem(getOpenedKey(todayQ.id, user.email) + '_time', Date.now().toString());
     }
     setPhase('answering');
   };
@@ -112,7 +112,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     setSelectedAnswer(option);
     clearInterval(timerRef.current);
     const isCorrect = option === todayQ.correct_answer;
-    const pts = (isCorrect && !isAdmin) ? getPointsForDay(todayQ.day_number) : 0;
+    const pts = (isCorrect && !isAdmin) ? (todayQ.points || getPointsForDay(todayQ.day_number)) : 0;
 
     if (isCorrect) {
       playCorrect();
@@ -122,12 +122,22 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     }
 
     const ans = {
-      question_id: todayQ.id, user_email: user.email, user_answer: option,
+      question_id: todayQ.id, user_email: user.email,
+      user_name: stats?.user_name || user?.full_name || '',
+      user_answer: option,
       is_correct: isCorrect, points_earned: pts, day_number: todayQ.day_number,
       time_taken: (todayQ.time_limit||90) - timeLeft,
+      graded: todayQ.type !== 'essay',
     };
     const created = await base44.entities.Answer.create(ans);
     setAnswers(prev => [created, ...prev]);
+    base44.entities.ActivityLog.create({
+      user_email: user.email,
+      user_name: stats?.user_name || user?.full_name || '',
+      action: 'answer',
+      details: `أجاب على سؤال يوم ${todayQ.day_number} - ${isCorrect ? 'صحيح' : 'خاطئ'}`,
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
 
     if (!isAdmin && stats) {
       const upd = { total_points: (stats.total_points||0) + pts };
@@ -151,12 +161,22 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     setEssaySent(true);
     clearInterval(timerRef.current);
     const ans = {
-      question_id: todayQ.id, user_email: user.email, user_answer: essayText.trim(),
+      question_id: todayQ.id, user_email: user.email,
+      user_name: stats?.user_name || user?.full_name || '',
+      user_answer: essayText.trim(),
       is_correct: false, points_earned: 0, day_number: todayQ.day_number,
       time_taken: (todayQ.time_limit||90) - timeLeft,
+      graded: false,
     };
     const created = await base44.entities.Answer.create(ans);
     setAnswers(prev => [created, ...prev]);
+    base44.entities.ActivityLog.create({
+      user_email: user.email,
+      user_name: stats?.user_name || user?.full_name || '',
+      action: 'answer',
+      details: `أرسل إجابة مقالية ليوم ${todayQ.day_number} - بانتظار التصحيح`,
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
     refreshStats();
     setTimeout(() => setPhase('result'), 800);
   };
@@ -199,7 +219,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
           <div className="grid grid-cols-3 gap-2">
             <InfoBox label="النوع" value={typeMap[todayQ?.type] || '—'} />
             <InfoBox label="الوقت" value={`${todayQ?.time_limit || 90}ث`} />
-            <InfoBox label="النقاط" value={isAdmin ? '—' : getPointsForDay(todayQ?.day_number || 1)} accent />
+            <InfoBox label="النقاط" value={isAdmin ? '—' : (todayQ?.points || getPointsForDay(todayQ?.day_number || 1))} accent />
           </div>
           <motion.button whileTap={{ scale: 0.97 }} onClick={startAnswering}
             className="w-full py-4 rounded-2xl font-bold text-white text-base"

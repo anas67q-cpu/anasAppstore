@@ -27,18 +27,41 @@ export default function EssayReview({ onBack }) {
   const handleGrade = async (answer, isCorrect) => {
     setSaving(answer.id);
     const pts = isCorrect ? (answer.day_number <= 10 ? 1 : answer.day_number <= 20 ? 2 : answer.day_number <= 28 ? 3 : 5) : 0;
-    await base44.entities.Answer.update(answer.id, { is_correct: isCorrect, points_earned: pts });
-    // Update user stats
-    if (isCorrect) {
-      const stats = await base44.entities.UserStats.filter({ user_email: answer.user_email });
-      if (stats[0]) {
-        await base44.entities.UserStats.update(stats[0].id, {
-          total_correct: (stats[0].total_correct || 0) + 1,
-          total_points: (stats[0].total_points || 0) + pts,
-        });
+    const wasGraded = answer.graded === true;
+    const wasCorrect = answer.is_correct === true;
+    const prevPts = answer.points_earned || 0;
+
+    await base44.entities.Answer.update(answer.id, { is_correct: isCorrect, points_earned: pts, graded: true });
+
+    const statsArr = await base44.entities.UserStats.filter({ user_email: answer.user_email });
+    if (statsArr[0]) {
+      const s = statsArr[0];
+      const upd = {};
+      if (!wasGraded) {
+        // First time grading
+        if (isCorrect) {
+          upd.total_points = (s.total_points || 0) + pts;
+          upd.total_correct = (s.total_correct || 0) + 1;
+        } else {
+          upd.total_wrong = (s.total_wrong || 0) + 1;
+        }
+      } else if (wasCorrect && !isCorrect) {
+        // Correct → Wrong
+        upd.total_points = Math.max(0, (s.total_points || 0) - prevPts);
+        upd.total_correct = Math.max(0, (s.total_correct || 0) - 1);
+        upd.total_wrong = (s.total_wrong || 0) + 1;
+      } else if (!wasCorrect && isCorrect) {
+        // Wrong → Correct
+        upd.total_points = (s.total_points || 0) + pts;
+        upd.total_correct = (s.total_correct || 0) + 1;
+        upd.total_wrong = Math.max(0, (s.total_wrong || 0) - 1);
+      }
+      // Same → Same: no-op
+      if (Object.keys(upd).length > 0) {
+        await base44.entities.UserStats.update(s.id, upd);
       }
     }
-    setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, is_correct: isCorrect, points_earned: pts } : a));
+    setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, is_correct: isCorrect, points_earned: pts, graded: true } : a));
     setSaving(null);
   };
 
@@ -89,6 +112,7 @@ export default function EssayReview({ onBack }) {
                           className="p-4 border-b border-border last:border-0">
                           <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="flex-1">
+                              <p className="text-xs font-bold text-foreground mb-0.5">{a.user_name || '—'}</p>
                               <p className="text-xs text-muted-foreground font-medium mb-1">{a.user_email}</p>
                               <p className="text-sm text-foreground leading-relaxed bg-secondary p-3 rounded-xl">{a.user_answer}</p>
                             </div>
@@ -98,7 +122,7 @@ export default function EssayReview({ onBack }) {
                                   style={{ background: '#046B6720', color: '#046B67' }}>
                                   <CheckCircle2 className="w-3 h-3" /> صحيح
                                 </span>
-                              ) : a.points_earned === 0 && !a.is_correct && a.user_answer ? (
+                              ) : !a.graded && a.user_answer ? (
                                 <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">
                                   <Clock className="w-3 h-3" /> انتظار
                                 </span>

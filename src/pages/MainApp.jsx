@@ -34,6 +34,18 @@ export default function MainApp() {
     }
   }, [user, stats, loading]);
 
+  useEffect(() => {
+    if (user?.email) {
+      base44.entities.ActivityLog.create({
+        user_email: user.email,
+        user_name: stats?.user_name || user?.full_name || '',
+        action: 'login',
+        details: 'دخول إلى التطبيق',
+        timestamp: new Date().toISOString(),
+      }).catch(() => {});
+    }
+  }, [user?.email]);
+
   const isAdmin = user?.role === 'admin';
 
   if (loading) {
@@ -88,8 +100,16 @@ export default function MainApp() {
               : <Moon className="w-5 h-5 text-white" />
             }
           </button>
-          <button onClick={() => { playTap(); base44.auth.logout(); }}
-            className="p-2 rounded-full hover:bg-white/10 tap-scale">
+          <button onClick={() => {
+            playTap();
+            base44.entities.ActivityLog.create({
+              user_email: user?.email || '',
+              user_name: stats?.user_name || user?.full_name || '',
+              action: 'logout',
+              details: 'خروج من التطبيق',
+              timestamp: new Date().toISOString(),
+            }).catch(() => {}).finally(() => base44.auth.logout());
+          }} className="p-2 rounded-full hover:bg-white/10 tap-scale">
             <LogOut className="w-5 h-5 text-white" />
           </button>
         </div>

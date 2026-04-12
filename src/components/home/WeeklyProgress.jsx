@@ -17,13 +17,16 @@ function getWeekSaturday() {
   return sat;
 }
 
-function getDayStatus(dateStr, questions, answers) {
+function getDayStatus(dateStr, questions, answers, todayStr) {
   const q = questions.find(q => q.publish_date === dateStr);
   if (!q) return { status: 'none', q: null, a: null };
   const a = answers.find(a => a.question_id === q.id);
+  // Essay submitted but not yet graded → show as pending (future dot)
+  if (a && q.type === 'essay' && !a.graded && a.user_answer) return { status: 'future', q, a };
   if (a?.is_correct) return { status: 'correct', q, a };
   if (a && !a.is_correct) return { status: 'wrong', q, a };
-  if (q.is_published) return { status: 'missed', q, a: null };
+  // Published but not answered: if it's today → still open (future), else missed
+  if (q.is_published) return { status: dateStr === todayStr ? 'future' : 'missed', q, a: null };
   return { status: 'future', q, a: null };
 }
 
@@ -47,12 +50,13 @@ export default function WeeklyProgress({ questions = [], answers = [] }) {
 
   const weekDays = useMemo(() => {
     const sat = getWeekSaturday();
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(sat);
       d.setDate(sat.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
-      const isToday = dateStr === new Date().toISOString().split('T')[0];
-      const { status, q, a } = getDayStatus(dateStr, questions, answers);
+      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+      const isToday = dateStr === todayStr;
+      const { status, q, a } = getDayStatus(dateStr, questions, answers, todayStr);
       return { d, dateStr, dayName: DAYS[i], isToday, status, q, a };
     });
   }, [questions, answers]);

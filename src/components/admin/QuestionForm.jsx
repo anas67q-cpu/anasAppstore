@@ -10,11 +10,13 @@ export default function QuestionForm({ question, onSaved }) {
   const [dayNumber, setDayNumber] = useState(question?.day_number || 1);
   const [timeLimit, setTimeLimit] = useState(question?.time_limit || 90);
   const [publishDate, setPublishDate] = useState(question?.publish_date || '');
+  const [points, setPoints] = useState(question?.points ?? null);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     playTap();
+    const autoPoints = Number(dayNumber) <= 10 ? 1 : Number(dayNumber) <= 20 ? 2 : 3;
     const data = {
       text,
       type,
@@ -23,6 +25,7 @@ export default function QuestionForm({ question, onSaved }) {
       day_number: Number(dayNumber),
       time_limit: Number(timeLimit),
       publish_date: publishDate,
+      points: points !== null && points !== '' ? Number(points) : autoPoints,
     };
     if (question) {
       await base44.entities.Question.update(question.id, data);
@@ -83,10 +86,23 @@ export default function QuestionForm({ question, onSaved }) {
         <input value={correctAnswer} onChange={e => setCorrectAnswer(e.target.value)} className={inputClass} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">الوقت (ثانية)</label>
           <input type="number" value={timeLimit} onChange={e => setTimeLimit(e.target.value)} className={inputClass} />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">
+            النقاط
+            <span className="text-[9px] text-primary mr-1">
+              (تلقائي: {Number(dayNumber) <= 10 ? 1 : Number(dayNumber) <= 20 ? 2 : 3})
+            </span>
+          </label>
+          <input type="number" min={1} max={10}
+            value={points !== null && points !== '' ? points : ''}
+            placeholder={String(Number(dayNumber) <= 10 ? 1 : Number(dayNumber) <= 20 ? 2 : 3)}
+            onChange={e => setPoints(e.target.value === '' ? null : e.target.value)}
+            className={inputClass} />
         </div>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">تاريخ النشر</label>

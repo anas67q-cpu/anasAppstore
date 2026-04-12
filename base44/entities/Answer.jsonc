@@ -10,6 +10,10 @@
       "type": "string",
       "description": "User email"
     },
+    "user_name": {
+      "type": "string",
+      "description": "User display name"
+    },
     "user_answer": {
       "type": "string",
       "description": "The answer given"
@@ -29,6 +33,11 @@
     "day_number": {
       "type": "number",
       "description": "Competition day"
+    },
+    "graded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether essay was graded by admin"
     }
   },
   "required": [
