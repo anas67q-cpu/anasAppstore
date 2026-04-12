@@ -1,0 +1,186 @@
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Plus, Trash2, Award, Upload, Search } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import BottomSheet from '@/components/BottomSheet';
+import { playTap } from '@/lib/sounds';
+
+export default function BadgeManager({ onBack }) {
+  const [userBadges, setUserBadges] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => { loadData(); }, []);
+
+  const loadData = async () => {
+    const [ub, u] = await Promise.all([
+      base44.entities.UserBadge.list('-created_date', 200),
+      base44.entities.UserStats.list('-total_points', 200),
+    ]);
+    setUserBadges(ub);
+    setUsers(u);
+    setLoading(false);
+  };
+
+  const handleDelete = async (id) => {
+    await base44.entities.UserBadge.delete(id);
+    setUserBadges(prev => prev.filter(b => b.id !== id));
+  };
+
+  const filtered = userBadges.filter(b =>
+    (b.user_name || '').includes(search) ||
+    (b.user_email || '').includes(search) ||
+    (b.badge_name || '').includes(search)
+  );
+
+  return (
+    <>
+      <div className="px-4 py-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h2 className="text-lg font-bold text-foreground">إدارة الشارات</h2>
+          </div>
+          <button onClick={() => setShowForm(true)}
+            className="p-2.5 rounded-xl text-white tap-scale"
+            style={{ background: 'hsl(var(--primary))' }}>
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..."
+            className="w-full bg-secondary rounded-xl px-3 py-2.5 pr-10 text-sm text-foreground outline-none" />
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map((b, i) => (
+              <motion.div key={b.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
+                className="card-surface p-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0"
+                  style={{ background: b.badge_color || 'hsl(var(--primary))' }}>
+                  {b.badge_icon_url
+                    ? <img src={b.badge_icon_url} alt="" className="w-full h-full object-cover" />
+                    : <Award className="w-5 h-5 text-white" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">{b.badge_name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{b.user_name || b.user_email}</p>
+                </div>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground">{b.count || 1}×</span>
+                <button onClick={() => handleDelete(b.id)} className="p-1.5 rounded-lg hover:bg-secondary tap-scale">
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </button>
+              </motion.div>
+            ))}
+            {filtered.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-8">لا توجد شارات</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <BottomSheet open={showForm} onClose={() => setShowForm(false)} title="منح شارة">
+        <AddBadgeForm users={users} onSaved={() => { setShowForm(false); loadData(); }} />
+      </BottomSheet>
+    </>
+  );
+}
+
+function AddBadgeForm({ users, onSaved }) {
+  const [selectedUser, setSelectedUser] = useState('');
+  const [badgeName, setBadgeName] = useState('');
+  const [badgeDesc, setBadgeDesc] = useState('');
+  const [badgeColor, setBadgeColor] = useState('#046B67');
+  const [iconUrl, setIconUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleUpload = async (file) => {
+    setUploading(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setIconUrl(file_url);
+    setUploading(false);
+  };
+
+  const handleSave = async () => {
+    if (!selectedUser || !badgeName) return;
+    setSaving(true);
+    const user = users.find(u => u.user_email === selectedUser);
+
+    // Check if badge already exists for this user
+    const existing = await base44.entities.UserBadge.filter({ user_email: selectedUser, badge_name: badgeName });
+    if (existing.length > 0) {
+      // Increment count
+      await base44.entities.UserBadge.update(existing[0].id, { count: (existing[0].count || 1) + 1 });
+    } else {
+      await base44.entities.UserBadge.create({
+        user_email: selectedUser,
+        user_name: user?.user_name || '',
+        badge_name: badgeName,
+        badge_description: badgeDesc,
+        badge_icon_url: iconUrl,
+        badge_color: badgeColor,
+        count: 1,
+      });
+    }
+    setSaving(false);
+    onSaved();
+  };
+
+  const ic = 'w-full bg-secondary rounded-xl px-3 py-3 text-sm text-foreground outline-none focus:ring-2';
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">المشترك</label>
+        <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className={ic}>
+          <option value="">اختر مشترك...</option>
+          {users.map(u => (
+            <option key={u.id} value={u.user_email}>{u.user_name || u.user_email}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">اسم الشارة</label>
+        <input value={badgeName} onChange={e => setBadgeName(e.target.value)} className={ic} placeholder="اسم الشارة" />
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">وصف الشارة</label>
+        <textarea value={badgeDesc} onChange={e => setBadgeDesc(e.target.value)} className={`${ic} min-h-[60px] resize-none`} placeholder="وصف..." />
+      </div>
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <label className="text-xs text-muted-foreground mb-1 block">اللون</label>
+          <input type="color" value={badgeColor} onChange={e => setBadgeColor(e.target.value)}
+            className="w-full h-10 rounded-xl border border-border cursor-pointer" />
+        </div>
+        <div className="flex-1">
+          <label className="text-xs text-muted-foreground mb-1 block">أيقونة</label>
+          <label className="flex items-center justify-center gap-2 h-10 rounded-xl bg-secondary text-sm cursor-pointer tap-scale">
+            {uploading ? <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
+              : iconUrl ? '✅ رُفعت' : <><Upload className="w-4 h-4" /> رفع</>}
+            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleUpload(e.target.files[0])} />
+          </label>
+        </div>
+      </div>
+      <button onClick={handleSave} disabled={saving || !selectedUser || !badgeName}
+        className="w-full py-3.5 rounded-xl text-white font-bold tap-scale disabled:opacity-50"
+        style={{ background: 'hsl(var(--primary))' }}>
+        {saving ? 'جاري المنح...' : 'منح الشارة'}
+      </button>
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Badge",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Badge name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Badge description"
+    },
+    "icon_url": {
+      "type": "string",
+      "description": "Badge icon image URL"
+    },
+    "color": {
+      "type": "string",
+      "default": "#046B67"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
