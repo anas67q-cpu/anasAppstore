@@ -43,7 +43,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail }) 
               <span className="text-2xl">🥈</span>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-card"
                 style={{ background: '#94a3b8' }}>
-                {(top3[1].user_name || 'م').charAt(0)}
+                2
               </div>
               <div className="w-16 h-14 rounded-t-xl bg-secondary flex flex-col items-center justify-center">
                 <p className="text-xs font-bold text-foreground truncate w-full text-center px-1">{top3[1].user_name || '—'}</p>
@@ -64,7 +64,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail }) 
               <span className="text-2xl">🥇</span>
               <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-card"
                 style={{ background: '#f59e0b' }}>
-                {(top3[0].user_name || 'م').charAt(0)}
+                1
               </div>
               <div className="w-20 h-20 rounded-t-xl flex flex-col items-center justify-center"
                 style={{ background: 'hsl(var(--primary))' }}>
@@ -87,7 +87,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail }) 
               <span className="text-2xl">🥉</span>
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-card"
                 style={{ background: '#cd7c2f' }}>
-                {(top3[2].user_name || 'م').charAt(0)}
+                3
               </div>
               <div className="w-16 h-10 rounded-t-xl bg-secondary flex flex-col items-center justify-center">
                 <p className="text-xs font-bold text-foreground truncate w-full text-center px-1">{top3[2].user_name || '—'}</p>

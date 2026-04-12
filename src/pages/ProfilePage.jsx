@@ -5,7 +5,7 @@ import BadgesSection from '@/components/profile/BadgesSection';
 import LeaderboardSection from '@/components/profile/LeaderboardSection';
 import { Trophy } from 'lucide-react';
 
-export default function ProfilePage({ user, stats, allStats, userBadges, updateUserName, fetchAllStats }) {
+export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], updateUserName, fetchAllStats }) {
   const rank = allStats.findIndex(s => s.user_email === user?.email) + 1;
 
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function ProfilePage({ user, stats, allStats, userBadges, updateU
       )}
 
       <NameEditor userName={user?.full_name} statsName={stats?.user_name} onSave={updateUserName} />
-      <BadgesSection userBadges={userBadges} />
+      <BadgesSection allBadges={allBadges} userBadges={userBadges} />
       <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} />
     </div>
   );

@@ -12,10 +12,11 @@ import { playTap } from '@/lib/sounds';
 
 export default function MainApp() {
   const {
-    user, stats, questions, answers, allStats, settings, userBadges, loading,
+    user, stats, questions, answers, allStats, settings, userBadges, allBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
   } = useAppData();
 
+  const displayName = stats?.user_name || user?.full_name || 'مرحباً';
   const { theme, toggle: toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('home');
   const [showAdmin, setShowAdmin] = useState(false);
@@ -54,22 +55,32 @@ export default function MainApp() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Header - teal like the mockup */}
+      {/* Header */}
       <div
         className="flex items-center justify-between px-5 flex-shrink-0"
         style={{
           background: 'hsl(var(--primary))',
-          paddingTop: 'max(env(safe-area-inset-top), 16px)',
-          paddingBottom: '14px',
-          borderRadius: '0 0 24px 24px',
+          paddingTop: 'max(env(safe-area-inset-top), 20px)',
+          paddingBottom: '18px',
+          borderRadius: '0 0 28px 28px',
         }}
       >
+        {/* Right side: greeting + name (RTL = right) */}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button onClick={() => { playTap(); setShowAdmin(true); }}
+              className="p-2 rounded-full hover:bg-white/10 tap-scale">
+              <Settings className="w-5 h-5 text-white" />
+            </button>
+          )}
+          <div>
+            <p className="text-white/70 text-xs">يا هلا ومرحبا،</p>
+            <p className="text-white text-xl font-black">{displayName} 👋</p>
+          </div>
+        </div>
+
         {/* Left actions */}
         <div className="flex items-center gap-2">
-          <button onClick={() => { playTap(); base44.auth.logout(); }}
-            className="p-2 rounded-full hover:bg-white/10 tap-scale">
-            <LogOut className="w-5 h-5 text-white" />
-          </button>
           <button onClick={() => { playTap(); toggleTheme(); }}
             className="p-2 rounded-full hover:bg-white/10 tap-scale">
             {theme === 'dark'
@@ -77,27 +88,20 @@ export default function MainApp() {
               : <Moon className="w-5 h-5 text-white" />
             }
           </button>
-        </div>
-
-        {/* Right: greeting + name */}
-        <div className="flex items-center gap-2 text-right">
-          <div>
-            <p className="text-white/70 text-xs">يا هلا ومرحبا،</p>
-            <p className="text-white text-xl font-black">{user?.full_name || 'مرحباً'} 👋</p>
-          </div>
-          {isAdmin && (
-            <button onClick={() => { playTap(); setShowAdmin(true); }}
-              className="p-2 rounded-full hover:bg-white/10 tap-scale">
-              <Settings className="w-5 h-5 text-white" />
-            </button>
-          )}
+          <button onClick={() => { playTap(); base44.auth.logout(); }}
+            className="p-2 rounded-full hover:bg-white/10 tap-scale">
+            <LogOut className="w-5 h-5 text-white" />
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-4" style={{ paddingBottom: 100 }}>
         <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
-          <HomePage user={user} stats={stats} questions={questions} answers={answers} />
+          <HomePage
+            user={user} stats={stats} questions={questions} answers={answers}
+            userBadges={userBadges} allBadges={allBadges || []} settings={settings}
+          />
         </div>
         <div style={{ display: activeTab === 'challenge' ? 'block' : 'none' }}>
           <ChallengePage
@@ -108,8 +112,8 @@ export default function MainApp() {
         <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
           <ProfilePage
             user={user} stats={stats} allStats={allStats}
-            userBadges={userBadges} updateUserName={updateUserName}
-            fetchAllStats={fetchAllStats}
+            userBadges={userBadges} allBadges={allBadges || []}
+            updateUserName={updateUserName} fetchAllStats={fetchAllStats}
           />
         </div>
       </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 
+const ADMIN_EMAIL = 'anas6.7q@gmail.com';
+
 const cache = {
   user: null, stats: null, questions: null, answers: null,
-  allStats: null, settings: null, userBadges: null, lastFetch: {},
+  allStats: null, settings: null, userBadges: null, allBadges: null, lastFetch: {},
 };
 const CACHE_TTL = 30000;
 
@@ -19,6 +21,7 @@ export default function useAppData() {
   const [allStats, setAllStats] = useState(cache.allStats || []);
   const [settings, setSettings] = useState(cache.settings || []);
   const [userBadges, setUserBadges] = useState(cache.userBadges || []);
+  const [allBadges, setAllBadges] = useState(cache.allBadges || []);
   const [loading, setLoading] = useState(!cache.user);
   const mounted = useRef(true);
 
@@ -56,9 +59,10 @@ export default function useAppData() {
   const fetchAllStats = useCallback(async () => {
     if (!shouldRefetch('allStats') && cache.allStats?.length) return cache.allStats;
     const s = await base44.entities.UserStats.list('-total_points', 100);
-    cache.allStats = s; cache.lastFetch.allStats = Date.now();
-    if (mounted.current) setAllStats(s);
-    return s;
+    const filtered = s.filter(u => u.user_email !== ADMIN_EMAIL);
+    cache.allStats = filtered; cache.lastFetch.allStats = Date.now();
+    if (mounted.current) setAllStats(filtered);
+    return filtered;
   }, []);
 
   const fetchSettings = useCallback(async () => {
@@ -77,15 +81,23 @@ export default function useAppData() {
     return b;
   }, []);
 
+  const fetchAllBadges = useCallback(async () => {
+    if (!shouldRefetch('allBadges') && cache.allBadges?.length) return cache.allBadges;
+    const b = await base44.entities.Badge.list('-created_date', 100);
+    cache.allBadges = b; cache.lastFetch.allBadges = Date.now();
+    if (mounted.current) setAllBadges(b);
+    return b;
+  }, []);
+
   const initAll = useCallback(async () => {
     setLoading(true);
     const u = await fetchUser();
     await Promise.all([
       fetchStats(u.email), fetchQuestions(), fetchAnswers(u.email),
-      fetchAllStats(), fetchSettings(), fetchUserBadges(u.email),
+      fetchAllStats(), fetchSettings(), fetchUserBadges(u.email), fetchAllBadges(),
     ]);
     if (mounted.current) setLoading(false);
-  }, [fetchUser, fetchStats, fetchQuestions, fetchAnswers, fetchAllStats, fetchSettings, fetchUserBadges]);
+  }, [fetchUser, fetchStats, fetchQuestions, fetchAnswers, fetchAllStats, fetchSettings, fetchUserBadges, fetchAllBadges]);
 
   const refreshStats = useCallback(async () => {
     if (user) { cache.lastFetch.stats = 0; await fetchStats(user.email); }
@@ -109,7 +121,7 @@ export default function useAppData() {
   }, []);
 
   return {
-    user, stats, questions, answers, allStats, settings, userBadges, loading,
+    user, stats, questions, answers, allStats, settings, userBadges, allBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
   };
 }

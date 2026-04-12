@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, FileQuestion, Users, Image, Award } from 'lucide-react';
+import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
 import ImageManager from '@/components/admin/ImageManager';
 import BadgeManager from '@/components/admin/BadgeManager';
+import EssayReview from '@/components/admin/EssayReview';
+import CompetitionInfoManager from '@/components/admin/CompetitionInfoManager';
 
 const SECTIONS = [
   { id: 'questions', label: 'إدارة الأسئلة', sub: 'أضف وعدّل أسئلة المسابقة', icon: FileQuestion, color: '#046B67' },
+  { id: 'essay', label: 'تصحيح المقالية', sub: 'تصحيح إجابات المتسابقين', icon: BookOpen, color: '#8b5cf6' },
   { id: 'users', label: 'إدارة المشتركين', sub: 'عرض وتعديل بيانات المشتركين', icon: Users, color: '#6366f1' },
-  { id: 'badges', label: 'إدارة الشارات', sub: 'منح وإدارة شارات المشتركين', icon: Award, color: '#f59e0b' },
+  { id: 'badges', label: 'إدارة الشارات', sub: 'إنشاء ومنح شارات المشتركين', icon: Award, color: '#f59e0b' },
   { id: 'images', label: 'الصور والأصول', sub: 'رفع صور التطبيق', icon: Image, color: '#ec4899' },
+  { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#0ea5e9' },
 ];
 
 export default function AdminDashboard({ onBack }) {
   const [section, setSection] = useState(null);
 
   if (section === 'questions') return <QuestionManager onBack={() => setSection(null)} />;
+  if (section === 'essay') return <EssayReview onBack={() => setSection(null)} />;
   if (section === 'users') return <UserManager onBack={() => setSection(null)} />;
   if (section === 'images') return <ImageManager onBack={() => setSection(null)} />;
   if (section === 'badges') return <BadgeManager onBack={() => setSection(null)} />;
+  if (section === 'info') return <CompetitionInfoManager onBack={() => setSection(null)} />;
 
   return (
     <div className="px-4 py-4 space-y-5">

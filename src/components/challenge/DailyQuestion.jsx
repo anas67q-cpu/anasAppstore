@@ -1,20 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle2, XCircle, Lock, Timer } from 'lucide-react';
+import { CheckCircle2, XCircle, Lock, Timer, Clock, Send } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
+import confetti from 'canvas-confetti';
+
+const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
 function getNextQuestionTime() {
-  const now = new Date();
-  const target = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-  const targetRiyadh = new Date(now);
-  // 9:30 PM Riyadh = 18:30 UTC
-  const riyadhNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
+  const riyadhNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
   const next = new Date(riyadhNow);
   next.setHours(21, 30, 0, 0);
   if (riyadhNow >= next) next.setDate(next.getDate() + 1);
-  const diffMs = next - riyadhNow;
-  return diffMs;
+  return next - riyadhNow;
 }
 
 function formatCountdown(ms) {
@@ -29,21 +27,35 @@ function getPointsForDay(d) {
   if (d <= 10) return 1; if (d <= 20) return 2; if (d <= 28) return 3; return 5;
 }
 
+function getOpenedKey(questionId) {
+  return `opened_q_${questionId}`;
+}
+
 export default function DailyQuestion({ questions, answers, user, stats, setStats, setAnswers, refreshStats }) {
-  const [phase, setPhase] = useState('preview');
+  const [phase, setPhase] = useState('init');
   const [timeLeft, setTimeLeft] = useState(0);
   const [countdown, setCountdown] = useState('');
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [essayText, setEssayText] = useState('');
+  const [essaySent, setEssaySent] = useState(false);
   const timerRef = useRef(null);
+  const isAdmin = user?.email === ADMIN_EMAIL;
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
   const todayQ = questions.find(q => q.publish_date === today && q.is_published);
   const todayA = todayQ ? answers.find(a => a.question_id === todayQ.id) : null;
 
+  // Determine initial phase
   useEffect(() => {
-    if (todayA) setPhase('result');
-    else if (todayQ) setPhase('preview');
-    else setPhase('waiting');
+    if (!todayQ) { setPhase('waiting'); return; }
+    if (todayA) { setPhase('result'); return; }
+    // Check if user already opened this question
+    const alreadyOpened = localStorage.getItem(getOpenedKey(todayQ.id));
+    if (alreadyOpened) {
+      setPhase('answering');
+    } else {
+      setPhase('preview');
+    }
   }, [todayA?.id, todayQ?.id]);
 
   useEffect(() => {
@@ -54,9 +66,16 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   }, [phase]);
 
   useEffect(() => {
-    if (phase !== 'answering') return;
+    if (phase !== 'answering' || todayA) return;
+    const stored = todayQ?.id ? localStorage.getItem(getOpenedKey(todayQ.id) + '_time') : null;
     const limit = todayQ?.time_limit || 90;
-    setTimeLeft(limit);
+    let startLeft = limit;
+    if (stored) {
+      const elapsed = Math.floor((Date.now() - Number(stored)) / 1000);
+      startLeft = Math.max(0, limit - elapsed);
+    }
+    if (startLeft <= 0) { handleTimeout(); return; }
+    setTimeLeft(startLeft);
     timerRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) { clearInterval(timerRef.current); handleTimeout(); return 0; }
@@ -66,24 +85,41 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     return () => clearInterval(timerRef.current);
   }, [phase]);
 
+  const startAnswering = () => {
+    playTap();
+    if (todayQ) {
+      localStorage.setItem(getOpenedKey(todayQ.id), '1');
+      localStorage.setItem(getOpenedKey(todayQ.id) + '_time', Date.now().toString());
+    }
+    setPhase('answering');
+  };
+
   const handleTimeout = async () => {
     if (!todayQ || todayA) return;
     const ans = { question_id: todayQ.id, user_email: user.email, user_answer: '', is_correct: false, points_earned: 0, day_number: todayQ.day_number };
     const created = await base44.entities.Answer.create(ans);
     setAnswers(prev => [created, ...prev]);
-    if (stats) await base44.entities.UserStats.update(stats.id, { total_missed: (stats.total_missed||0)+1, current_streak: 0 });
+    if (!isAdmin && stats) {
+      await base44.entities.UserStats.update(stats.id, { total_missed: (stats.total_missed||0)+1, current_streak: 0 });
+    }
     refreshStats();
     setPhase('result');
   };
 
   const handleAnswer = async (option) => {
-    if (selectedAnswer !== null) return;
+    if (selectedAnswer !== null || todayA) return;
     playTap();
     setSelectedAnswer(option);
     clearInterval(timerRef.current);
     const isCorrect = option === todayQ.correct_answer;
-    const pts = isCorrect ? getPointsForDay(todayQ.day_number) : 0;
-    if (isCorrect) playCorrect(); else playWrong();
+    const pts = (isCorrect && !isAdmin) ? getPointsForDay(todayQ.day_number) : 0;
+
+    if (isCorrect) {
+      playCorrect();
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors: ['#046B67','#f59e0b','#fff'] });
+    } else {
+      playWrong();
+    }
 
     const ans = {
       question_id: todayQ.id, user_email: user.email, user_answer: option,
@@ -93,7 +129,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     const created = await base44.entities.Answer.create(ans);
     setAnswers(prev => [created, ...prev]);
 
-    if (stats) {
+    if (!isAdmin && stats) {
       const upd = { total_points: (stats.total_points||0) + pts };
       if (isCorrect) {
         upd.total_correct = (stats.total_correct||0)+1;
@@ -106,13 +142,29 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
       await base44.entities.UserStats.update(stats.id, upd);
     }
     refreshStats();
-    setTimeout(() => setPhase('result'), 900);
+    setTimeout(() => setPhase('result'), 1200);
+  };
+
+  const handleEssaySubmit = async () => {
+    if (!essayText.trim() || essaySent) return;
+    playTap();
+    setEssaySent(true);
+    clearInterval(timerRef.current);
+    const ans = {
+      question_id: todayQ.id, user_email: user.email, user_answer: essayText.trim(),
+      is_correct: false, points_earned: 0, day_number: todayQ.day_number,
+      time_taken: (todayQ.time_limit||90) - timeLeft,
+    };
+    const created = await base44.entities.Answer.create(ans);
+    setAnswers(prev => [created, ...prev]);
+    refreshStats();
+    setTimeout(() => setPhase('result'), 800);
   };
 
   const typeMap = { multiple_choice: 'اختيار من متعدد', true_false: 'صح أو خطأ', essay: 'مقالي' };
 
   // Waiting
-  if (phase === 'waiting') {
+  if (phase === 'waiting' || phase === 'init') {
     return (
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
         className="card-surface shadow-card p-8 text-center space-y-4">
@@ -130,24 +182,26 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     );
   }
 
-  // Preview
+  // Preview - one time only
   if (phase === 'preview') {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="card-surface shadow-card overflow-hidden">
-        {/* Header */}
         <div className="p-5" style={{ background: 'hsl(var(--primary))' }}>
           <p className="text-white/80 text-xs">اليوم {todayQ?.day_number}</p>
           <h2 className="text-white text-xl font-bold mt-1">السؤال وصل! 📩</h2>
           <p className="text-white/70 text-sm mt-1">لديك {todayQ?.time_limit || 90} ثانية للإجابة</p>
         </div>
         <div className="p-5 space-y-4">
+          <div className="p-3.5 rounded-xl bg-secondary/70 text-center">
+            <p className="text-xs text-muted-foreground">⚠️ بمجرد الضغط على "ابدأ" سيبدأ العداد التنازلي ولا يمكن التراجع</p>
+          </div>
           <div className="grid grid-cols-3 gap-2">
             <InfoBox label="النوع" value={typeMap[todayQ?.type] || '—'} />
             <InfoBox label="الوقت" value={`${todayQ?.time_limit || 90}ث`} />
-            <InfoBox label="النقاط" value={getPointsForDay(todayQ?.day_number || 1)} accent />
+            <InfoBox label="النقاط" value={isAdmin ? '—' : getPointsForDay(todayQ?.day_number || 1)} accent />
           </div>
-          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setPhase('answering')}
+          <motion.button whileTap={{ scale: 0.97 }} onClick={startAnswering}
             className="w-full py-4 rounded-2xl font-bold text-white text-base"
             style={{ background: 'hsl(var(--primary))' }}>
             ابدأ الإجابة
@@ -158,12 +212,12 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   }
 
   // Answering
-  if (phase === 'answering') {
+  if (phase === 'answering' && !todayA) {
     const limit = todayQ?.time_limit || 90;
     const pct = (timeLeft / limit) * 100;
     return (
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-        {/* Timer bar */}
+        {/* Timer */}
         <div className="card-surface shadow-card p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">يوم {todayQ?.day_number}</span>
@@ -175,7 +229,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
             </div>
           </div>
           <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
-            <motion.div className="h-full rounded-full transition-all duration-1000"
+            <div className="h-full rounded-full transition-all duration-1000"
               style={{ width: `${pct}%`, background: timeLeft <= 10 ? '#ef4444' : 'hsl(var(--primary))' }} />
           </div>
         </div>
@@ -185,65 +239,142 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
           <p className="text-base font-bold leading-relaxed text-foreground">{todayQ?.text}</p>
         </div>
 
-        {/* Options */}
-        <div className="space-y-2.5">
-          {todayQ?.type === 'multiple_choice' && todayQ?.options?.map((opt, i) => {
-            let bg = 'bg-secondary';
-            let border = 'border-transparent';
-            if (selectedAnswer !== null) {
-              if (opt === todayQ.correct_answer) { bg = ''; border = ''; }
-              else if (opt === selectedAnswer) { bg = ''; border = ''; }
-            }
-            const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
-            const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
+        {/* Options - MC */}
+        {todayQ?.type === 'multiple_choice' && (
+          <div className="space-y-2.5">
+            {todayQ.options?.map((opt, i) => {
+              const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
+              const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
+              return (
+                <motion.button key={i} whileTap={{ scale: selectedAnswer === null ? 0.97 : 1 }}
+                  onClick={() => selectedAnswer === null && handleAnswer(opt)}
+                  disabled={selectedAnswer !== null}
+                  className="w-full p-4 rounded-2xl text-right font-medium text-sm border transition-all"
+                  style={{
+                    background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
+                    borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                  <span className="flex items-center gap-2">
+                    {isCorrectOpt && <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#046B67' }} />}
+                    {isWrongSelected && <XCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#ef4444' }} />}
+                    {opt}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
 
-            return (
-              <motion.button key={i} whileTap={{ scale: 0.97 }} onClick={() => handleAnswer(opt)}
-                className={`w-full p-4 rounded-2xl text-right font-medium text-sm border transition-all tap-scale`}
-                style={{
-                  background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
-                  borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
-                  color: 'hsl(var(--foreground))'
-                }}>
-                {opt}
-              </motion.button>
-            );
-          })}
+        {/* Options - True/False */}
+        {todayQ?.type === 'true_false' && (
+          <div className="grid grid-cols-2 gap-3">
+            {['صح', 'خطأ'].map(opt => {
+              const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
+              const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
+              return (
+                <motion.button key={opt} whileTap={{ scale: selectedAnswer === null ? 0.97 : 1 }}
+                  onClick={() => selectedAnswer === null && handleAnswer(opt)}
+                  disabled={selectedAnswer !== null}
+                  className="p-4 rounded-2xl font-bold text-base border tap-scale"
+                  style={{
+                    background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
+                    borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
+                    color: 'hsl(var(--foreground))'
+                  }}>
+                  {opt}
+                </motion.button>
+              );
+            })}
+          </div>
+        )}
 
-          {todayQ?.type === 'true_false' && ['صح', 'خطأ'].map(opt => {
-            const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
-            const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
-            return (
-              <motion.button key={opt} whileTap={{ scale: 0.97 }} onClick={() => handleAnswer(opt)}
-                className="w-full p-4 rounded-2xl font-bold text-base border tap-scale"
-                style={{
-                  background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
-                  borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
-                  color: 'hsl(var(--foreground))'
-                }}>
-                {opt}
-              </motion.button>
-            );
-          })}
-        </div>
+        {/* Essay */}
+        {todayQ?.type === 'essay' && (
+          <div className="space-y-3">
+            {!essaySent ? (
+              <>
+                <textarea
+                  value={essayText}
+                  onChange={e => setEssayText(e.target.value)}
+                  placeholder="اكتب إجابتك هنا..."
+                  className="w-full min-h-[120px] rounded-2xl p-4 text-sm bg-secondary text-foreground outline-none resize-none border border-border focus:border-primary"
+                />
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleEssaySubmit}
+                  disabled={!essayText.trim()}
+                  className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-40"
+                  style={{ background: 'hsl(var(--primary))' }}>
+                  <Send className="w-4 h-4" /> إرسال الإجابة
+                </motion.button>
+              </>
+            ) : (
+              <div className="text-center py-8 space-y-3">
+                <Clock className="w-12 h-12 mx-auto text-muted-foreground animate-pulse" />
+                <p className="font-bold text-foreground">بانتظار تصحيح الإدارة</p>
+                <p className="text-sm text-muted-foreground">سيتم إعلامك بالنتيجة قريباً</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Feedback after answering MC/TF */}
+        {selectedAnswer !== null && todayQ?.type !== 'essay' && (
+          <AnimatePresence>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl text-center"
+              style={{
+                background: selectedAnswer === todayQ.correct_answer ? '#046B6715' : '#ef444415'
+              }}>
+              {selectedAnswer === todayQ.correct_answer
+                ? <p className="font-bold" style={{ color: '#046B67' }}>🎉 أحسنت! إجابة صحيحة</p>
+                : (
+                  <div className="space-y-1">
+                    <p className="font-bold" style={{ color: '#ef4444' }}>😔 إجابة خاطئة</p>
+                    <p className="text-xs text-muted-foreground">الإجابة الصحيحة: <span className="font-bold text-foreground">{todayQ.correct_answer}</span></p>
+                  </div>
+                )
+              }
+            </motion.div>
+          </AnimatePresence>
+        )}
       </motion.div>
     );
   }
 
   // Result
+  const isEssayPending = todayA && !todayA.is_correct && todayQ?.type === 'essay' && todayA.user_answer;
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
       className="card-surface shadow-card overflow-hidden">
-      <div className="p-6 text-center" style={{ background: todayA?.is_correct ? '#046B6715' : '#ef444415' }}>
-        {todayA?.is_correct
-          ? <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: '#046B67' }} />
-          : <XCircle className="w-14 h-14 mx-auto mb-3" style={{ color: '#ef4444' }} />
+      <div className="p-6 text-center" style={{
+        background: isEssayPending ? '#6366f115' : (todayA?.is_correct ? '#046B6715' : '#ef444415')
+      }}>
+        {isEssayPending
+          ? <Clock className="w-14 h-14 mx-auto mb-3 text-indigo-400 animate-pulse" />
+          : todayA?.is_correct
+            ? <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: '#046B67' }} />
+            : <XCircle className="w-14 h-14 mx-auto mb-3" style={{ color: '#ef4444' }} />
         }
         <h3 className="text-xl font-bold text-foreground">
-          {todayA?.is_correct ? 'أحسنت! إجابة صحيحة 🎉' : todayA?.user_answer ? 'إجابة خاطئة' : 'انتهى الوقت'}
+          {isEssayPending
+            ? 'بانتظار التصحيح'
+            : todayA?.is_correct
+              ? 'أحسنت! إجابة صحيحة 🎉'
+              : todayA?.user_answer
+                ? 'إجابة خاطئة'
+                : 'انتهى الوقت'
+          }
         </h3>
+        {isEssayPending && (
+          <p className="text-sm text-muted-foreground mt-1">ستظهر نتيجة الإجابة المقالية بعد تصحيح الإدارة</p>
+        )}
         {todayA?.points_earned > 0 && (
           <p className="text-base font-black mt-2" style={{ color: '#046B67' }}>+{todayA.points_earned} نقطة</p>
+        )}
+        {todayA && !todayA.is_correct && !isEssayPending && todayQ?.correct_answer && (
+          <p className="text-xs text-muted-foreground mt-2">
+            الإجابة الصحيحة: <span className="font-bold text-foreground">{todayQ.correct_answer}</span>
+          </p>
         )}
       </div>
       <div className="p-5 text-center space-y-3">

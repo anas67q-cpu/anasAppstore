@@ -11,20 +11,24 @@
       "description": "Setting value"
     },
     "quick_challenge_image": {
-      "type": "string",
-      "description": "URL for quick challenge card"
+      "type": "string"
     },
     "memory_challenge_image": {
-      "type": "string",
-      "description": "URL for memory challenge card"
+      "type": "string"
     },
     "leaderboard_shield": {
-      "type": "string",
-      "description": "URL for leaderboard shield image"
+      "type": "string"
     },
     "competition_start_date": {
+      "type": "string"
+    },
+    "competition_description": {
       "type": "string",
-      "description": "Competition start date"
+      "description": "Competition info text"
+    },
+    "competition_logo": {
+      "type": "string",
+      "description": "Competition logo URL"
     }
   },
   "required": [

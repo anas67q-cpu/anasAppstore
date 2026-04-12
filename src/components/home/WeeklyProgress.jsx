@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import { toHijri } from '@/lib/hijri';
 import { playTap } from '@/lib/sounds';
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
-const DAYS_SHORT = ['س','ح','ن','ث','ر','خ','ج'];
 
 function getWeekSaturday() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-  const day = now.getDay(); // 0=Sun .. 6=Sat
+  const day = now.getDay();
   const diff = day === 6 ? 0 : day + 1;
   const sat = new Date(now);
   sat.setDate(now.getDate() - diff);
@@ -54,14 +53,9 @@ export default function WeeklyProgress({ questions = [], answers = [] }) {
       const dateStr = d.toISOString().split('T')[0];
       const isToday = dateStr === new Date().toISOString().split('T')[0];
       const { status, q, a } = getDayStatus(dateStr, questions, answers);
-      return { d, dateStr, dayName: DAYS[i], dayShort: DAYS_SHORT[i], isToday, status, q, a };
+      return { d, dateStr, dayName: DAYS[i], isToday, status, q, a };
     });
   }, [questions, answers]);
-
-  const handleTap = (day) => {
-    playTap();
-    setSelected(day);
-  };
 
   return (
     <>
@@ -81,15 +75,9 @@ export default function WeeklyProgress({ questions = [], answers = [] }) {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
-                onClick={() => handleTap(day)}
-                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl tap-scale transition-all ${
-                  day.isToday
-                    ? 'ring-2 ring-offset-1 ring-offset-background'
-                    : ''
-                } bg-secondary`}
-                style={day.isToday ? { ringColor: 'hsl(var(--primary))' } : {}}
+                onClick={() => { playTap(); setSelected(day); }}
+                className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl tap-scale transition-all bg-secondary ${day.isToday ? 'ring-2 ring-primary' : ''}`}
               >
-                {/* Status dot */}
                 <div
                   className="w-5 h-5 rounded-full flex items-center justify-center"
                   style={{ background: color ? color + '22' : 'transparent' }}
@@ -98,10 +86,10 @@ export default function WeeklyProgress({ questions = [], answers = [] }) {
                   {day.status === 'wrong' && <XCircle className="w-4 h-4" style={{ color: '#ef4444' }} />}
                   {day.status === 'missed' && <AlertCircle className="w-4 h-4" style={{ color: '#f59e0b' }} />}
                   {(day.status === 'future' || day.status === 'none') && (
-                    <div className="w-2.5 h-2.5 rounded-full bg-muted" />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'hsl(0,0%,65%)' }} />
                   )}
                 </div>
-                <span className="text-[10px] text-muted-foreground font-medium">{day.dayShort}</span>
+                <span className="text-[9px] text-muted-foreground font-medium text-center leading-tight">{day.dayName}</span>
               </motion.button>
             );
           })}
@@ -123,7 +111,6 @@ export default function WeeklyProgress({ questions = [], answers = [] }) {
         </div>
       </motion.div>
 
-      {/* Day Detail Bottom Sheet */}
       <BottomSheet open={!!selected} onClose={() => setSelected(null)}>
         {selected && <DayDetail day={selected} />}
       </BottomSheet>
@@ -137,7 +124,7 @@ function DayDetail({ day }) {
   const statusMap = {
     correct: { label: 'أجبت صحيح ✅', color: '#046B67' },
     wrong: { label: 'أجبت خاطئ ❌', color: '#ef4444' },
-    missed: { label: 'فاتتك هذه السؤال ⚠️', color: '#f59e0b' },
+    missed: { label: 'فاتك هذا السؤال ⚠️', color: '#f59e0b' },
     future: { label: 'لم يحن وقته بعد', color: '#94a3b8' },
     none: { label: 'لا يوجد سؤال', color: '#94a3b8' },
   };
@@ -147,7 +134,6 @@ function DayDetail({ day }) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="text-center space-y-1">
         <h3 className="text-xl font-bold text-foreground">{day.dayName}</h3>
         <p className="text-sm text-muted-foreground">{hijriDate}</p>
@@ -161,7 +147,6 @@ function DayDetail({ day }) {
 
       {day.q ? (
         <div className="space-y-3">
-          {/* Question info */}
           <div className="card-surface p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">سؤال رقم {day.q.day_number}</span>
@@ -178,7 +163,6 @@ function DayDetail({ day }) {
             </div>
           </div>
 
-          {/* Answers */}
           {day.a && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary">
