@@ -17,16 +17,20 @@ function getWeekSaturday() {
   return sat;
 }
 
-function getDayStatus(dateStr, questions, answers, todayStr) {
+function getDayStatus(dateStr, questions, answers, userEmail) {
   const q = questions.find(q => q.publish_date === dateStr);
   if (!q) return { status: 'none', q: null, a: null };
   const a = answers.find(a => a.question_id === q.id);
-  // Essay submitted but not yet graded → show as pending (future dot)
-  if (a && q.type === 'essay' && !a.graded && a.user_answer) return { status: 'future', q, a };
   if (a?.is_correct) return { status: 'correct', q, a };
-  if (a && !a.is_correct) return { status: 'wrong', q, a };
-  // Published but not answered: if it's today → still open (future), else missed
-  if (q.is_published) return { status: dateStr === todayStr ? 'future' : 'missed', q, a: null };
+  // Essay pending grading → show as future/pending
+  if (a && !a.graded && q.type === 'essay' && a.user_answer) return { status: 'future', q, a };
+  if (a && a.user_answer) return { status: 'wrong', q, a };
+  // Published, no answer yet
+  if (q.is_published) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+    if (dateStr === today) return { status: 'future', q, a: null }; // today → still open
+    return { status: 'missed', q, a: null };
+  }
   return { status: 'future', q, a: null };
 }
 
@@ -45,21 +49,22 @@ const STATUS_COLORS = {
   none: null,
 };
 
-export default function WeeklyProgress({ questions = [], answers = [] }) {
+export default function WeeklyProgress({ questions = [], answers = [], userEmail = '' }) {
   const [selected, setSelected] = useState(null);
+
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
 
   const weekDays = useMemo(() => {
     const sat = getWeekSaturday();
-    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(sat);
       d.setDate(sat.getDate() + i);
-      const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+      const dateStr = d.toISOString().split('T')[0];
       const isToday = dateStr === todayStr;
-      const { status, q, a } = getDayStatus(dateStr, questions, answers, todayStr);
+      const { status, q, a } = getDayStatus(dateStr, questions, answers, userEmail);
       return { d, dateStr, dayName: DAYS[i], isToday, status, q, a };
     });
-  }, [questions, answers]);
+  }, [questions, answers, userEmail]);
 
   return (
     <>
@@ -129,12 +134,15 @@ function DayDetail({ day }) {
     correct: { label: 'أجبت صحيح ✅', color: '#046B67' },
     wrong: { label: 'أجبت خاطئ ❌', color: '#ef4444' },
     missed: { label: 'فاتك هذا السؤال ⚠️', color: '#f59e0b' },
-    future: { label: 'لم يحن وقته بعد', color: '#94a3b8' },
+    future: { label: day.q?.is_published ? 'السؤال وصل! انتظرك 📩' : 'لم يحن وقته بعد', color: '#94a3b8' },
     none: { label: 'لا يوجد سؤال', color: '#94a3b8' },
   };
 
   const st = statusMap[day.status];
   const typeMap = { multiple_choice: 'اختيار من متعدد', true_false: 'صح أو خطأ', essay: 'مقالي' };
+
+  // Check if user has answered (opened the question)
+  const hasAnswered = !!day.a;
 
   return (
     <div className="space-y-4">
@@ -158,25 +166,39 @@ function DayDetail({ day }) {
                 {typeMap[day.q.type] || day.q.type}
               </span>
             </div>
-            <p className="text-sm font-medium leading-relaxed text-foreground">{day.q.text}</p>
+            {/* Only show question text if user has answered */}
+            {hasAnswered ? (
+              <p className="text-sm font-medium leading-relaxed text-foreground">{day.q.text}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">افتح الصندوق لرؤية السؤال 📦</p>
+            )}
             <div className="flex items-center gap-2 pt-1">
               <span className="text-xs text-muted-foreground">النقاط:</span>
               <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>
-                {getPointsForDay(day.q.day_number)}
+                {day.q.points || getPointsForDay(day.q.day_number)}
               </span>
             </div>
           </div>
 
-          {day.a && (
+          {hasAnswered && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary">
                 <span className="text-xs text-muted-foreground">إجابتك:</span>
                 <span className="text-sm font-medium text-foreground">{day.a.user_answer || '—'}</span>
               </div>
-              <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#046B6715' }}>
-                <span className="text-xs text-muted-foreground">الإجابة الصحيحة:</span>
-                <span className="text-sm font-bold" style={{ color: '#046B67' }}>{day.q.correct_answer}</span>
-              </div>
+              {day.status !== 'future' && day.q?.correct_answer && (
+                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#046B6715' }}>
+                  <span className="text-xs text-muted-foreground">الإجابة الصحيحة:</span>
+                  <span className="text-sm font-bold" style={{ color: '#046B67' }}>{day.q.correct_answer}</span>
+                </div>
+              )}
+              {/* Admin note */}
+              {day.a?.admin_note && (
+                <div className="p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
+                  <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
+                  <p className="text-sm text-foreground">{day.a.admin_note}</p>
+                </div>
+              )}
             </div>
           )}
 

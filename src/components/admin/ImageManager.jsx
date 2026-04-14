@@ -7,6 +7,8 @@ const SLOTS = [
   { key: 'quick_challenge_image', label: 'صورة التحدي السريع' },
   { key: 'memory_challenge_image', label: 'صورة تحدي الذاكرة' },
   { key: 'leaderboard_shield', label: 'شعار لوحة المتصدرين' },
+  { key: 'card_template', label: 'قالب بطاقة النشر (الشكل الموحد)' },
+  { key: 'streak_logo', label: 'شعار بطاقة سلسلة الإجابات' },
 ];
 
 export default function ImageManager({ onBack }) {

@@ -4,11 +4,14 @@ import HomePage from '@/pages/HomePage';
 import ChallengePage from '@/pages/ChallengePage';
 import ProfilePage from '@/pages/ProfilePage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+import NewBadgeModal from '@/components/NewBadgeModal';
 import useAppData from '@/lib/useAppData';
 import { useTheme } from '@/lib/useTheme';
 import { base44 } from '@/api/base44Client';
 import { Settings, Sun, Moon, LogOut } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
+
+const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
 export default function MainApp() {
   const {
@@ -21,7 +24,9 @@ export default function MainApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [showAdmin, setShowAdmin] = useState(false);
   const [ensuredStats, setEnsuredStats] = useState(false);
+  const [newBadgeNotif, setNewBadgeNotif] = useState(null);
 
+  // Ensure user stats
   useEffect(() => {
     if (user && !stats && !ensuredStats && !loading) {
       setEnsuredStats(true);
@@ -34,19 +39,49 @@ export default function MainApp() {
     }
   }, [user, stats, loading]);
 
+  // Log login activity
   useEffect(() => {
-    if (user?.email) {
+    if (user && stats) {
       base44.entities.ActivityLog.create({
         user_email: user.email,
         user_name: stats?.user_name || user?.full_name || '',
         action: 'login',
-        details: 'دخول إلى التطبيق',
+        details: 'دخل إلى التطبيق',
         timestamp: new Date().toISOString(),
       }).catch(() => {});
     }
   }, [user?.email]);
 
+  // Check for new badge (shown only once per session)
+  useEffect(() => {
+    if (!user || !userBadges || userBadges.length === 0) return;
+    const sessionKey = `badge_notif_seen_${user.email}`;
+    const seen = sessionStorage.getItem(sessionKey);
+    if (seen) return;
+    // Find the latest badge (created in last 24h and not yet shown)
+    const shownKey = `badge_shown_ids_${user.email}`;
+    const shownIds = JSON.parse(localStorage.getItem(shownKey) || '[]');
+    const recent = userBadges.find(b => {
+      const age = Date.now() - new Date(b.created_date).getTime();
+      return age < 48 * 3600000 && !shownIds.includes(b.id);
+    });
+    if (recent) {
+      sessionStorage.setItem(sessionKey, '1');
+      const newShown = [...shownIds, recent.id];
+      localStorage.setItem(shownKey, JSON.stringify(newShown));
+      setNewBadgeNotif(recent);
+    }
+  }, [userBadges, user?.email]);
+
   const isAdmin = user?.role === 'admin';
+
+  // Parse settings
+  const settingsObj = {};
+  (settings || []).forEach(s => { if (s.key) settingsObj[s.key] = s; });
+  const imageSettings = settingsObj['images'] || {};
+  const cardTemplateUrl = imageSettings.card_template;
+  const streakLogoUrl = imageSettings.streak_logo;
+  const userName = stats?.user_name || user?.full_name || '';
 
   if (loading) {
     return (
@@ -67,6 +102,14 @@ export default function MainApp() {
 
   return (
     <div className="h-full flex flex-col bg-background">
+      {/* New Badge Modal */}
+      <NewBadgeModal
+        badge={newBadgeNotif}
+        userName={userName}
+        cardTemplateUrl={cardTemplateUrl}
+        onClose={() => setNewBadgeNotif(null)}
+      />
+
       {/* Header */}
       <div
         className="flex items-center justify-between px-5 flex-shrink-0"
@@ -77,7 +120,6 @@ export default function MainApp() {
           borderRadius: '0 0 28px 28px',
         }}
       >
-        {/* Right side: greeting + name (RTL = right) */}
         <div className="flex items-center gap-2">
           {isAdmin && (
             <button onClick={() => { playTap(); setShowAdmin(true); }}
@@ -91,7 +133,6 @@ export default function MainApp() {
           </div>
         </div>
 
-        {/* Left actions */}
         <div className="flex items-center gap-2">
           <button onClick={() => { playTap(); toggleTheme(); }}
             className="p-2 rounded-full hover:bg-white/10 tap-scale">
@@ -102,14 +143,18 @@ export default function MainApp() {
           </button>
           <button onClick={() => {
             playTap();
-            base44.entities.ActivityLog.create({
-              user_email: user?.email || '',
-              user_name: stats?.user_name || user?.full_name || '',
-              action: 'logout',
-              details: 'خروج من التطبيق',
-              timestamp: new Date().toISOString(),
-            }).catch(() => {}).finally(() => base44.auth.logout());
-          }} className="p-2 rounded-full hover:bg-white/10 tap-scale">
+            if (user) {
+              base44.entities.ActivityLog.create({
+                user_email: user.email,
+                user_name: stats?.user_name || user?.full_name || '',
+                action: 'logout',
+                details: 'غادر التطبيق',
+                timestamp: new Date().toISOString(),
+              }).catch(() => {});
+            }
+            base44.auth.logout();
+          }}
+            className="p-2 rounded-full hover:bg-white/10 tap-scale">
             <LogOut className="w-5 h-5 text-white" />
           </button>
         </div>
@@ -121,6 +166,7 @@ export default function MainApp() {
           <HomePage
             user={user} stats={stats} questions={questions} answers={answers}
             userBadges={userBadges} allBadges={allBadges || []} settings={settings}
+            cardTemplateUrl={cardTemplateUrl} streakLogoUrl={streakLogoUrl} userName={userName}
           />
         </div>
         <div style={{ display: activeTab === 'challenge' ? 'block' : 'none' }}>
@@ -134,6 +180,7 @@ export default function MainApp() {
             user={user} stats={stats} allStats={allStats}
             userBadges={userBadges} allBadges={allBadges || []}
             updateUserName={updateUserName} fetchAllStats={fetchAllStats}
+            cardTemplateUrl={cardTemplateUrl} streakLogoUrl={streakLogoUrl} userName={userName}
           />
         </div>
       </div>

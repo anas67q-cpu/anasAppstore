@@ -36,6 +36,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const [timeLeft, setTimeLeft] = useState(0);
   const [countdown, setCountdown] = useState('');
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [pendingAnswer, setPendingAnswer] = useState(null); // selected but not yet submitted
   const [essayText, setEssayText] = useState('');
   const [essaySent, setEssaySent] = useState(false);
   const timerRef = useRef(null);
@@ -106,9 +107,16 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     setPhase('result');
   };
 
+  const handleSelectOption = (option) => {
+    if (selectedAnswer !== null || todayA) return;
+    playTap();
+    setPendingAnswer(option);
+  };
+
   const handleAnswer = async (option) => {
     if (selectedAnswer !== null || todayA) return;
     playTap();
+    setPendingAnswer(null);
     setSelectedAnswer(option);
     clearInterval(timerRef.current);
     const isCorrect = option === todayQ.correct_answer;
@@ -265,14 +273,15 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
             {todayQ.options?.map((opt, i) => {
               const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
               const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
+              const isPending = pendingAnswer === opt && selectedAnswer === null;
               return (
                 <motion.button key={i} whileTap={{ scale: selectedAnswer === null ? 0.97 : 1 }}
-                  onClick={() => selectedAnswer === null && handleAnswer(opt)}
+                  onClick={() => selectedAnswer === null && handleSelectOption(opt)}
                   disabled={selectedAnswer !== null}
                   className="w-full p-4 rounded-2xl text-right font-medium text-sm border transition-all"
                   style={{
-                    background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
-                    borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
+                    background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : isPending ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--secondary))',
+                    borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : isPending ? 'hsl(var(--primary))' : 'transparent',
                     color: 'hsl(var(--foreground))'
                   }}>
                   <span className="flex items-center gap-2">
@@ -283,29 +292,54 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
                 </motion.button>
               );
             })}
+            {pendingAnswer && selectedAnswer === null && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleAnswer(pendingAnswer)}
+                className="w-full py-4 rounded-2xl font-bold text-white text-base"
+                style={{ background: 'hsl(var(--primary))' }}
+              >
+                ✅ إرسال الإجابة
+              </motion.button>
+            )}
           </div>
         )}
 
         {/* Options - True/False */}
         {todayQ?.type === 'true_false' && (
-          <div className="grid grid-cols-2 gap-3">
-            {['صح', 'خطأ'].map(opt => {
-              const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
-              const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
-              return (
-                <motion.button key={opt} whileTap={{ scale: selectedAnswer === null ? 0.97 : 1 }}
-                  onClick={() => selectedAnswer === null && handleAnswer(opt)}
-                  disabled={selectedAnswer !== null}
-                  className="p-4 rounded-2xl font-bold text-base border tap-scale"
-                  style={{
-                    background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : 'hsl(var(--secondary))',
-                    borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : 'transparent',
-                    color: 'hsl(var(--foreground))'
-                  }}>
-                  {opt}
-                </motion.button>
-              );
-            })}
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              {['صح', 'خطأ'].map(opt => {
+                const isCorrectOpt = selectedAnswer !== null && opt === todayQ.correct_answer;
+                const isWrongSelected = selectedAnswer === opt && opt !== todayQ.correct_answer;
+                const isPending = pendingAnswer === opt && selectedAnswer === null;
+                return (
+                  <motion.button key={opt} whileTap={{ scale: selectedAnswer === null ? 0.97 : 1 }}
+                    onClick={() => selectedAnswer === null && handleSelectOption(opt)}
+                    disabled={selectedAnswer !== null}
+                    className="p-4 rounded-2xl font-bold text-base border tap-scale"
+                    style={{
+                      background: isCorrectOpt ? '#046B6720' : isWrongSelected ? '#ef444420' : isPending ? 'hsl(var(--primary) / 0.12)' : 'hsl(var(--secondary))',
+                      borderColor: isCorrectOpt ? '#046B67' : isWrongSelected ? '#ef4444' : isPending ? 'hsl(var(--primary))' : 'transparent',
+                      color: 'hsl(var(--foreground))'
+                    }}>
+                    {opt}
+                  </motion.button>
+                );
+              })}
+            </div>
+            {pendingAnswer && selectedAnswer === null && (
+              <motion.button
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => handleAnswer(pendingAnswer)}
+                className="w-full py-4 rounded-2xl font-bold text-white text-base"
+                style={{ background: 'hsl(var(--primary))' }}
+              >
+                ✅ إرسال الإجابة
+              </motion.button>
+            )}
           </div>
         )}
 
@@ -397,6 +431,13 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
           </p>
         )}
       </div>
+      {/* Admin note */}
+      {todayA?.admin_note && (
+        <div className="mx-5 mb-1 p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
+          <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
+          <p className="text-sm text-foreground">{todayA.admin_note}</p>
+        </div>
+      )}
       <div className="p-5 text-center space-y-3">
         <p className="text-sm text-muted-foreground">السؤال القادم خلال</p>
         <p className="text-2xl font-black font-mono" style={{ color: 'hsl(var(--primary))' }}>{countdown}</p>

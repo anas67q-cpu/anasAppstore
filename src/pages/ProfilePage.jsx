@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import NameEditor from '@/components/profile/NameEditor';
 import BadgesSection from '@/components/profile/BadgesSection';
 import LeaderboardSection from '@/components/profile/LeaderboardSection';
+import ComplaintsSection from '@/components/profile/ComplaintsSection';
+import StreakCard from '@/components/home/StreakCard';
 import { Trophy } from 'lucide-react';
 
-export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], updateUserName, fetchAllStats }) {
+export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName }) {
   const rank = allStats.findIndex(s => s.user_email === user?.email) + 1;
 
   useEffect(() => {
@@ -44,8 +46,21 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
       )}
 
       <NameEditor userName={user?.full_name} statsName={stats?.user_name} onSave={updateUserName} />
-      <BadgesSection allBadges={allBadges} userBadges={userBadges} />
+
+      {/* Streak Card */}
+      <StreakCard stats={stats} streakLogoUrl={streakLogoUrl} />
+
+      {/* Badges */}
+      <BadgesSection
+        allBadges={allBadges}
+        userBadges={userBadges}
+        cardTemplateUrl={cardTemplateUrl}
+        userName={userName}
+      />
+
       <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} />
+
+      <ComplaintsSection user={user} stats={stats} />
     </div>
   );
 }

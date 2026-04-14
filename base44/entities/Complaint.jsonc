@@ -1,0 +1,32 @@
+{
+  "name": "Complaint",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "User complaint or inquiry"
+    },
+    "admin_reply": {
+      "type": "string",
+      "description": "Admin response"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "replied"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "user_email",
+    "message"
+  ]
+}

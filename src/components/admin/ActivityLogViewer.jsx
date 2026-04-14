@@ -40,9 +40,22 @@ export default function ActivityLogViewer({ onBack }) {
           </button>
           <h2 className="text-lg font-bold text-foreground">نشاط المتسابقين</h2>
         </div>
-        <button onClick={load} className="p-2 rounded-xl bg-secondary tap-scale">
-          <RefreshCw className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <div className="flex gap-2">
+          <button onClick={load} className="p-2 rounded-xl bg-secondary tap-scale">
+            <RefreshCw className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={async () => {
+              if (!window.confirm('هل تريد حذف جميع السجلات؟')) return;
+              const all = await base44.entities.ActivityLog.list('-created_date', 1000);
+              await Promise.all(all.map(l => base44.entities.ActivityLog.delete(l.id)));
+              setLogs([]);
+            }}
+            className="p-2 rounded-xl bg-destructive/10 tap-scale"
+          >
+            <span className="text-xs font-bold text-destructive px-1">حذف الكل</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (

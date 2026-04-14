@@ -29,6 +29,14 @@
     "competition_logo": {
       "type": "string",
       "description": "Competition logo URL"
+    },
+    "card_template": {
+      "type": "string",
+      "description": "Shared card background template URL"
+    },
+    "streak_logo": {
+      "type": "string",
+      "description": "Streak share card logo URL"
     }
   },
   "required": [

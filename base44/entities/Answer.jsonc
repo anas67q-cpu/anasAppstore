@@ -38,6 +38,10 @@
       "type": "boolean",
       "default": false,
       "description": "Whether essay was graded by admin"
+    },
+    "admin_note": {
+      "type": "string",
+      "description": "Admin note to the user for essay answers"
     }
   },
   "required": [

@@ -1,24 +1,26 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, ListChecks, Activity } from 'lucide-react';
+import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
 import ImageManager from '@/components/admin/ImageManager';
 import BadgeManager from '@/components/admin/BadgeManager';
 import EssayReview from '@/components/admin/EssayReview';
 import CompetitionInfoManager from '@/components/admin/CompetitionInfoManager';
+import ComplaintsManager from '@/components/admin/ComplaintsManager';
 import AnswerViewer from '@/components/admin/AnswerViewer';
 import ActivityLogViewer from '@/components/admin/ActivityLogViewer';
 
 const SECTIONS = [
   { id: 'questions', label: 'إدارة الأسئلة', sub: 'أضف وعدّل أسئلة المسابقة', icon: FileQuestion, color: '#046B67' },
   { id: 'essay', label: 'تصحيح المقالية', sub: 'تصحيح إجابات المتسابقين', icon: BookOpen, color: '#8b5cf6' },
-  { id: 'answers', label: 'إجابات المتسابقين', sub: 'عرض جميع الإجابات والأوقات', icon: ListChecks, color: '#0ea5e9' },
+  { id: 'answers', label: 'إجابات المتسابقين', sub: 'عرض جميع الإجابات والأوقات', icon: ClipboardList, color: '#0ea5e9' },
   { id: 'activity', label: 'نشاط المتسابقين', sub: 'سجل الدخول والخروج والإجابات', icon: Activity, color: '#10b981' },
+  { id: 'complaints', label: 'الشكاوى والاستفسارات', sub: 'الرد على استفسارات المتسابقين', icon: MessageSquare, color: '#f59e0b' },
   { id: 'users', label: 'إدارة المشتركين', sub: 'عرض وتعديل بيانات المشتركين', icon: Users, color: '#6366f1' },
   { id: 'badges', label: 'إدارة الشارات', sub: 'إنشاء ومنح شارات المشتركين', icon: Award, color: '#f59e0b' },
-  { id: 'images', label: 'الصور والأصول', sub: 'رفع صور التطبيق', icon: Image, color: '#ec4899' },
-  { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#14b8a6' },
+  { id: 'images', label: 'الصور والأصول', sub: 'رفع صور التطبيق وقوالب البطاقات', icon: Image, color: '#ec4899' },
+  { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#0ea5e9' },
 ];
 
 export default function AdminDashboard({ onBack }) {
@@ -26,12 +28,13 @@ export default function AdminDashboard({ onBack }) {
 
   if (section === 'questions') return <QuestionManager onBack={() => setSection(null)} />;
   if (section === 'essay') return <EssayReview onBack={() => setSection(null)} />;
+  if (section === 'answers') return <AnswerViewer onBack={() => setSection(null)} />;
+  if (section === 'activity') return <ActivityLogViewer onBack={() => setSection(null)} />;
+  if (section === 'complaints') return <ComplaintsManager onBack={() => setSection(null)} />;
   if (section === 'users') return <UserManager onBack={() => setSection(null)} />;
   if (section === 'images') return <ImageManager onBack={() => setSection(null)} />;
   if (section === 'badges') return <BadgeManager onBack={() => setSection(null)} />;
   if (section === 'info') return <CompetitionInfoManager onBack={() => setSection(null)} />;
-  if (section === 'answers') return <AnswerViewer onBack={() => setSection(null)} />;
-  if (section === 'activity') return <ActivityLogViewer onBack={() => setSection(null)} />;
 
   return (
     <div className="px-4 py-4 space-y-5">
@@ -53,7 +56,7 @@ export default function AdminDashboard({ onBack }) {
               key={sec.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07 }}
+              transition={{ delay: i * 0.05 }}
               onClick={() => setSection(sec.id)}
               className="card-surface shadow-card p-4 flex items-center gap-4 tap-scale text-right w-full"
             >

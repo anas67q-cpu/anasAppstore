@@ -3,12 +3,20 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
+function getPoints(dayNumber) {
+  if (dayNumber <= 10) return 1;
+  if (dayNumber <= 20) return 2;
+  if (dayNumber <= 28) return 3;
+  return 5;
+}
+
 export default function EssayReview({ onBack }) {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeQ, setActiveQ] = useState(null);
   const [saving, setSaving] = useState(null);
+  const [noteText, setNoteText] = useState({});
 
   useEffect(() => { load(); }, []);
 
@@ -24,45 +32,65 @@ export default function EssayReview({ onBack }) {
 
   const getEssayAnswers = (q) => answers.filter(a => a.question_id === q.id && a.user_answer && a.user_answer.trim());
 
+  // Smart grading: handles toggling and prevents double-points
   const handleGrade = async (answer, isCorrect) => {
+    // No change if same grade already applied
+    if (answer.graded && answer.is_correct === isCorrect) return;
+
     setSaving(answer.id);
-    const pts = isCorrect ? (answer.day_number <= 10 ? 1 : answer.day_number <= 20 ? 2 : answer.day_number <= 28 ? 3 : 5) : 0;
-    const wasGraded = answer.graded === true;
-    const wasCorrect = answer.is_correct === true;
-    const prevPts = answer.points_earned || 0;
+    const pts = isCorrect ? getPoints(answer.day_number) : 0;
 
-    await base44.entities.Answer.update(answer.id, { is_correct: isCorrect, points_earned: pts, graded: true });
-
+    // Update stats: reverse previous if graded
     const statsArr = await base44.entities.UserStats.filter({ user_email: answer.user_email });
-    if (statsArr[0]) {
-      const s = statsArr[0];
+    const s = statsArr[0];
+    if (s) {
       const upd = {};
-      if (!wasGraded) {
-        // First time grading
-        if (isCorrect) {
-          upd.total_points = (s.total_points || 0) + pts;
-          upd.total_correct = (s.total_correct || 0) + 1;
+      // Reverse old grade
+      if (answer.graded) {
+        if (answer.is_correct) {
+          upd.total_correct = Math.max(0, (s.total_correct || 0) - 1);
+          upd.total_points = Math.max(0, (s.total_points || 0) - (answer.points_earned || 0));
         } else {
-          upd.total_wrong = (s.total_wrong || 0) + 1;
+          upd.total_wrong = Math.max(0, (s.total_wrong || 0) - 1);
         }
-      } else if (wasCorrect && !isCorrect) {
-        // Correct → Wrong
-        upd.total_points = Math.max(0, (s.total_points || 0) - prevPts);
-        upd.total_correct = Math.max(0, (s.total_correct || 0) - 1);
-        upd.total_wrong = (s.total_wrong || 0) + 1;
-      } else if (!wasCorrect && isCorrect) {
-        // Wrong → Correct
-        upd.total_points = (s.total_points || 0) + pts;
-        upd.total_correct = (s.total_correct || 0) + 1;
-        upd.total_wrong = Math.max(0, (s.total_wrong || 0) - 1);
       }
-      // Same → Same: no-op
-      if (Object.keys(upd).length > 0) {
-        await base44.entities.UserStats.update(s.id, upd);
+      // Apply new grade
+      if (isCorrect) {
+        upd.total_correct = (upd.total_correct ?? s.total_correct ?? 0) + 1;
+        upd.total_points = (upd.total_points ?? s.total_points ?? 0) + pts;
+      } else {
+        upd.total_wrong = (upd.total_wrong ?? s.total_wrong ?? 0) + 1;
       }
+      await base44.entities.UserStats.update(s.id, upd);
     }
-    setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, is_correct: isCorrect, points_earned: pts, graded: true } : a));
+
+    const note = noteText[answer.id]?.trim() || answer.admin_note || '';
+    await base44.entities.Answer.update(answer.id, {
+      is_correct: isCorrect,
+      points_earned: pts,
+      graded: true,
+      admin_note: note,
+    });
+
+    setAnswers(prev => prev.map(a =>
+      a.id === answer.id ? { ...a, is_correct: isCorrect, points_earned: pts, graded: true, admin_note: note } : a
+    ));
     setSaving(null);
+  };
+
+  const handleSaveNote = async (answer) => {
+    const note = noteText[answer.id]?.trim();
+    if (note === undefined) return;
+    setSaving(answer.id + '_note');
+    await base44.entities.Answer.update(answer.id, { admin_note: note });
+    setAnswers(prev => prev.map(a => a.id === answer.id ? { ...a, admin_note: note } : a));
+    setSaving(null);
+  };
+
+  const statusBadge = (a) => {
+    if (a.graded && a.is_correct) return <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full" style={{ background: '#046B6720', color: '#046B67' }}><CheckCircle2 className="w-3 h-3" /> صحيح</span>;
+    if (a.graded && !a.is_correct) return <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full" style={{ background: '#ef444420', color: '#ef4444' }}><XCircle className="w-3 h-3" /> خاطئ</span>;
+    return <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground"><Clock className="w-3 h-3" /> انتظار</span>;
   };
 
   return (
@@ -85,7 +113,7 @@ export default function EssayReview({ onBack }) {
         <div className="space-y-4">
           {questions.map(q => {
             const qAnswers = getEssayAnswers(q);
-            const pending = qAnswers.filter(a => !a.is_correct && a.points_earned === 0 && a.user_answer);
+            const pending = qAnswers.filter(a => !a.graded);
             return (
               <div key={q.id} className="card-surface shadow-card overflow-hidden">
                 <button
@@ -109,40 +137,40 @@ export default function EssayReview({ onBack }) {
                     ) : (
                       qAnswers.map(a => (
                         <motion.div key={a.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                          className="p-4 border-b border-border last:border-0">
-                          <div className="flex items-start justify-between gap-3 mb-3">
+                          className="p-4 border-b border-border last:border-0 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
                               <p className="text-xs font-bold text-foreground mb-0.5">{a.user_name || '—'}</p>
-                              <p className="text-xs text-muted-foreground font-medium mb-1">{a.user_email}</p>
-                              <p className="text-sm text-foreground leading-relaxed bg-secondary p-3 rounded-xl">{a.user_answer}</p>
+                              <p className="text-xs text-muted-foreground">{a.user_email}</p>
+                              <p className="text-sm text-foreground leading-relaxed bg-secondary p-3 rounded-xl mt-2">{a.user_answer}</p>
                             </div>
-                            <div className="flex-shrink-0">
-                              {a.is_correct ? (
-                                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                                  style={{ background: '#046B6720', color: '#046B67' }}>
-                                  <CheckCircle2 className="w-3 h-3" /> صحيح
-                                </span>
-                              ) : !a.graded && a.user_answer ? (
-                                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary text-muted-foreground">
-                                  <Clock className="w-3 h-3" /> انتظار
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-full"
-                                  style={{ background: '#ef444420', color: '#ef4444' }}>
-                                  <XCircle className="w-3 h-3" /> خاطئ
-                                </span>
-                              )}
+                            <div className="flex-shrink-0">{statusBadge(a)}</div>
+                          </div>
+
+                          {/* Admin note */}
+                          <div className="space-y-1.5">
+                            <label className="text-xs text-muted-foreground">ملاحظة للمتسابق (اختياري)</label>
+                            <div className="flex gap-2">
+                              <textarea
+                                value={noteText[a.id] !== undefined ? noteText[a.id] : (a.admin_note || '')}
+                                onChange={e => setNoteText(p => ({ ...p, [a.id]: e.target.value }))}
+                                placeholder="اكتب ملاحظتك..."
+                                className="flex-1 min-h-[60px] bg-secondary rounded-xl px-3 py-2 text-sm text-foreground outline-none resize-none border border-transparent focus:border-primary"
+                              />
                             </div>
                           </div>
+
                           <div className="flex gap-2">
-                            <button onClick={() => handleGrade(a, true)} disabled={saving === a.id}
-                              className="flex-1 py-2 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1 disabled:opacity-50"
-                              style={{ background: '#046B67' }}>
+                            <button onClick={() => handleGrade(a, true)}
+                              disabled={saving === a.id}
+                              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1 disabled:opacity-50"
+                              style={{ background: a.graded && a.is_correct ? '#046B67' : '#046B6790' }}>
                               <CheckCircle2 className="w-4 h-4" /> صحيح
                             </button>
-                            <button onClick={() => handleGrade(a, false)} disabled={saving === a.id}
-                              className="flex-1 py-2 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1 disabled:opacity-50"
-                              style={{ background: '#ef4444' }}>
+                            <button onClick={() => handleGrade(a, false)}
+                              disabled={saving === a.id}
+                              className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1 disabled:opacity-50"
+                              style={{ background: a.graded && !a.is_correct ? '#ef4444' : '#ef444490' }}>
                               <XCircle className="w-4 h-4" /> خاطئ
                             </button>
                           </div>
