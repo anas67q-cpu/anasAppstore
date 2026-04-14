@@ -157,10 +157,21 @@ function NewBadgeForm({ onSaved }) {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [uploadError, setUploadError] = useState('');
+
   const handleUpload = async (file) => {
+    setUploadError('');
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('حجم الصورة كبير جداً (الحد الأقصى 5MB)');
+      return;
+    }
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setIconUrl(file_url);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setIconUrl(file_url);
+    } catch (e) {
+      setUploadError('فشل رفع الصورة، حاول مرة أخرى');
+    }
     setUploading(false);
   };
 
@@ -195,6 +206,7 @@ function NewBadgeForm({ onSaved }) {
               : iconUrl ? '✅ رُفعت' : <><Upload className="w-4 h-4" /> رفع</>}
             <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleUpload(e.target.files[0])} />
           </label>
+          {uploadError && <p className="text-xs text-destructive mt-1">{uploadError}</p>}
         </div>
       </div>
       <button onClick={handleSave} disabled={saving || !name.trim()}
