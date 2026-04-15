@@ -43,7 +43,13 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-  const todayQ = questions.find(q => q.publish_date === today && q.is_published);
+  // Support multiple questions per day — sorted by day_number ascending
+  const todayQs = questions.filter(q => q.publish_date === today && q.is_published)
+    .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+
+  // Find the first unanswered question (or fallback to last if all answered)
+  const firstUnanswered = todayQs.find(q => !answers.find(a => a.question_id === q.id));
+  const todayQ = firstUnanswered || todayQs[todayQs.length - 1] || null;
   const todayA = todayQ ? answers.find(a => a.question_id === todayQ.id) : null;
 
   // Determine initial phase
@@ -57,6 +63,11 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     } else {
       setPhase('preview');
     }
+    // Reset answer state when question changes
+    setSelectedAnswer(null);
+    setPendingAnswer(null);
+    setEssayText('');
+    setEssaySent(false);
   }, [todayA?.id, todayQ?.id]);
 
   useEffect(() => {
@@ -144,7 +155,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
       user_name: stats?.user_name || user?.full_name || '',
       action: 'answer',
       details: `أجاب على سؤال يوم ${todayQ.day_number} - ${isCorrect ? 'صحيح' : 'خاطئ'}`,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
     }).catch(() => {});
 
     if (!isAdmin && stats) {
@@ -183,7 +194,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
       user_name: stats?.user_name || user?.full_name || '',
       action: 'answer',
       details: `أرسل إجابة مقالية ليوم ${todayQ.day_number} - بانتظار التصحيح`,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
     }).catch(() => {});
     refreshStats();
     setTimeout(() => setPhase('result'), 800);
@@ -396,10 +407,15 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   }
 
   // Result
+  // Check if there are more unanswered questions today
+  const answeredIds = new Set(answers.map(a => a.question_id));
+  const remainingQs = todayQs.filter(q => !answeredIds.has(q.id));
+  const hasMoreQuestions = remainingQs.length > 0 && todayA !== null;
+
   const isEssayPending = todayA && !todayA.is_correct && todayQ?.type === 'essay' && todayA.user_answer;
   return (
     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className="card-surface shadow-card overflow-hidden">
+      className="card-surface shadow-card overflow-hidden space-y-0">
       <div className="p-6 text-center" style={{
         background: isEssayPending ? '#6366f115' : (todayA?.is_correct ? '#046B6715' : '#ef444415')
       }}>
@@ -438,10 +454,28 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
           <p className="text-sm text-foreground">{todayA.admin_note}</p>
         </div>
       )}
-      <div className="p-5 text-center space-y-3">
-        <p className="text-sm text-muted-foreground">السؤال القادم خلال</p>
-        <p className="text-2xl font-black font-mono" style={{ color: 'hsl(var(--primary))' }}>{countdown}</p>
-      </div>
+      {hasMoreQuestions ? (
+        <div className="p-5 text-center">
+          <p className="text-sm text-muted-foreground mb-3">يوجد {remainingQs.length} سؤال آخر اليوم!</p>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              setSelectedAnswer(null); setPendingAnswer(null);
+              setEssayText(''); setEssaySent(false);
+              setPhase('preview');
+            }}
+            className="w-full py-4 rounded-2xl font-bold text-white"
+            style={{ background: 'hsl(var(--primary))' }}
+          >
+            السؤال التالي ←
+          </motion.button>
+        </div>
+      ) : (
+        <div className="p-5 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">السؤال القادم خلال</p>
+          <p className="text-2xl font-black font-mono" style={{ color: 'hsl(var(--primary))' }}>{countdown}</p>
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -7,7 +7,7 @@ import ComplaintsSection from '@/components/profile/ComplaintsSection';
 import StreakCard from '@/components/home/StreakCard';
 import { Trophy } from 'lucide-react';
 
-export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName }) {
+export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName }) {
   const rank = allStats.findIndex(s => s.user_email === user?.email) + 1;
 
   useEffect(() => {
@@ -48,12 +48,13 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
       <NameEditor userName={user?.full_name} statsName={stats?.user_name} onSave={updateUserName} />
 
       {/* Streak Card */}
-      <StreakCard stats={stats} streakLogoUrl={streakLogoUrl} />
+      <StreakCard stats={stats} streakLogoUrl={streakLogoUrl} cardTemplateUrl={cardTemplateUrl} />
 
       {/* Badges */}
       <BadgesSection
         allBadges={allBadges}
         userBadges={userBadges}
+        allUserBadges={allUserBadges}
         cardTemplateUrl={cardTemplateUrl}
         userName={userName}
       />

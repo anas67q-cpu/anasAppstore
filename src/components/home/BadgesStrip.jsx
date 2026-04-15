@@ -5,7 +5,7 @@ import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import html2canvas from 'html2canvas';
 
-export default function BadgesStrip({ userBadges = [], allBadges = [], cardTemplateUrl, userName = '' }) {
+export default function BadgesStrip({ userBadges = [], allBadges = [], allUserBadges = [], cardTemplateUrl, userName = '' }) {
   const [selected, setSelected] = useState(null);
   if (userBadges.length === 0) return null;
 
@@ -46,8 +46,7 @@ export default function BadgesStrip({ userBadges = [], allBadges = [], cardTempl
             ub={selected}
             cardTemplateUrl={cardTemplateUrl}
             userName={userName}
-            allBadges={allBadges}
-            userBadges={userBadges}
+            allUserBadges={allUserBadges}
           />
         )}
       </BottomSheet>
@@ -55,18 +54,18 @@ export default function BadgesStrip({ userBadges = [], allBadges = [], cardTempl
   );
 }
 
-function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allBadges, userBadges }) {
+function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allUserBadges }) {
   const cardRef = useRef(null);
   const [saving, setSaving] = useState(false);
 
-  // Who else has this badge
-  const ownersOfThisBadge = userBadges.filter(b => b.badge_name === ub.badge_name);
+  // Who has this badge — from all users
+  const ownersOfThisBadge = allUserBadges.filter(b => b.badge_name === ub.badge_name);
 
   const handleSave = async () => {
     if (!cardRef.current) return;
     setSaving(true);
-    const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
-    const url = canvas.toDataURL('image/png');
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
+    const url = canvas.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
     a.href = url;
     a.download = `badge-${ub.badge_name}-${userName}.png`;
@@ -107,32 +106,53 @@ function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allBadges, userBadges
         </div>
       </div>
 
+      {/* Save progress bar */}
+      {saving && (
+        <div className="w-full h-1.5 rounded-full overflow-hidden bg-secondary">
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            className="h-full w-1/3 rounded-full"
+            style={{ background: 'hsl(var(--primary))' }}
+          />
+        </div>
+      )}
+
       <button
         onClick={handleSave}
         disabled={saving}
         className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
         style={{ background: 'hsl(var(--primary))' }}
       >
-        <Download className="w-4 h-4" />
-        {saving ? 'جاري الحفظ...' : 'حفظ بطاقة الشارة'}
+        {saving
+          ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تجهيز البطاقة...</>
+          : <><Download className="w-4 h-4" />حفظ بطاقة الشارة</>
+        }
       </button>
 
-      {/* Hidden shareable card */}
+      {/* Hidden high-quality card for export */}
       <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
         <div ref={cardRef} style={{
-          width: 400, height: 400, borderRadius: 32, overflow: 'hidden',
+          width: 800, height: 800, borderRadius: 48, overflow: 'hidden',
           position: 'relative', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 16,
+          alignItems: 'center', justifyContent: 'center', gap: 20,
           fontFamily: 'Rubik, sans-serif', direction: 'rtl',
           background: cardTemplateUrl ? `url(${cardTemplateUrl}) center/cover no-repeat` : `linear-gradient(135deg, ${ub.badge_color || '#046B67'} 0%, #034b48 100%)`,
-          padding: 40,
+          padding: 60,
         }}>
           {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' }} />}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            {ub.badge_icon_url && <img src={ub.badge_icon_url} alt="" style={{ width: 80, height: 80, objectFit: 'cover' }} />}
-            <div style={{ color: '#fff', fontSize: 26, fontWeight: 900, textAlign: 'center' }}>{ub.badge_name}</div>
-            {ub.badge_description && <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', lineHeight: 1.5 }}>{ub.badge_description}</div>}
-            <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{userName}</div>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
+            {ub.badge_icon_url
+              ? <img src={ub.badge_icon_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover' }} crossOrigin="anonymous" />
+              : <div style={{ width: 160, height: 160, borderRadius: 32, background: ub.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 80 }}>🏅</span>
+                </div>
+            }
+            <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{ub.badge_name}</div>
+            {ub.badge_description && <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, textAlign: 'center', lineHeight: 1.5, maxWidth: 580 }}>{ub.badge_description}</div>}
           </div>
         </div>
       </div>

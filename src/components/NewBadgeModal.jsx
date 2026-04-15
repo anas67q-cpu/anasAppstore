@@ -20,8 +20,8 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
   const handleSave = async () => {
     if (!cardRef.current) return;
     setSaving(true);
-    const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
-    const url = canvas.toDataURL('image/png');
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
+    const url = canvas.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
     a.href = url;
     a.download = `badge-${badge?.badge_name}-${userName}.png`;
@@ -57,12 +57,11 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
             تم فتح شارة جديدة 🎉
           </motion.p>
 
-          {/* Card */}
+          {/* Card preview */}
           <motion.div
             initial={{ scale: 0.6, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.25, type: 'spring', stiffness: 300 }}
-            ref={cardRef}
             style={{
               width: 300, height: 300, borderRadius: 28,
               overflow: 'hidden', position: 'relative',
@@ -75,7 +74,9 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
             }}
           >
             {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.25)' }} />}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ color: '#fff', fontSize: 18, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+              <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, textAlign: 'center' }}>حصلت على شارة</div>
               {badge.badge_icon_url ? (
                 <img src={badge.badge_icon_url} alt="" style={{ width: 72, height: 72, objectFit: 'cover' }} />
               ) : (
@@ -83,11 +84,10 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
                   <span style={{ fontSize: 36 }}>🏅</span>
                 </div>
               )}
-              <div style={{ color: '#fff', fontSize: 20, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
+              <div style={{ color: '#fff', fontSize: 18, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
               {badge.badge_description && (
-                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, textAlign: 'center', lineHeight: 1.5 }}>{badge.badge_description}</div>
+                <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, textAlign: 'center', lineHeight: 1.5 }}>{badge.badge_description}</div>
               )}
-              <div style={{ marginTop: 4, color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{userName}</div>
             </div>
           </motion.div>
 
@@ -96,18 +96,60 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="mt-6 w-full max-w-xs"
+            className="mt-6 w-full max-w-xs space-y-3"
           >
+            {/* Progress bar when saving */}
+            {saving && (
+              <div className="w-full h-1.5 rounded-full overflow-hidden bg-white/20">
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '100%' }}
+                  transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                  className="h-full w-1/3 rounded-full bg-white"
+                />
+              </div>
+            )}
             <button
               onClick={handleSave}
               disabled={saving}
               className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'hsl(var(--primary))' }}
             >
-              <Download className="w-4 h-4" />
-              {saving ? 'جاري الحفظ...' : 'حفظ البطاقة'}
+              {saving
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تجهيز البطاقة...</>
+                : <><Download className="w-4 h-4" />حفظ البطاقة</>
+              }
             </button>
           </motion.div>
+
+          {/* Hidden high-quality card for export */}
+          <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+            <div ref={cardRef} style={{
+              width: 800, height: 800, borderRadius: 48, overflow: 'hidden',
+              position: 'relative', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', gap: 18,
+              fontFamily: 'Rubik, sans-serif', direction: 'rtl', padding: 60,
+              background: cardTemplateUrl
+                ? `url(${cardTemplateUrl}) center/cover no-repeat`
+                : `linear-gradient(135deg, ${badge.badge_color || '#046B67'} 0%, #034b48 100%)`,
+            }}>
+              {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />}
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
+                {badge.badge_icon_url
+                  ? <img src={badge.badge_icon_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover' }} crossOrigin="anonymous" />
+                  : <div style={{ width: 160, height: 160, borderRadius: 32, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 80 }}>🏅</span>
+                    </div>
+                }
+                <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
+                {badge.badge_description && (
+                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, textAlign: 'center', lineHeight: 1.5, maxWidth: 580 }}>{badge.badge_description}</div>
+                )}
+              </div>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

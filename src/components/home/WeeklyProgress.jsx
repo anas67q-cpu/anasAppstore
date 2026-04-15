@@ -7,31 +7,57 @@ import { playTap } from '@/lib/sounds';
 
 const DAYS = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
 
-function getWeekSaturday() {
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-  const day = now.getDay();
-  const diff = day === 6 ? 0 : day + 1;
-  const sat = new Date(now);
-  sat.setDate(now.getDate() - diff);
-  sat.setHours(0, 0, 0, 0);
-  return sat;
+// Get today string in Riyadh time
+function getRiyadhToday() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
 }
 
-function getDayStatus(dateStr, questions, answers, userEmail) {
-  const q = questions.find(q => q.publish_date === dateStr);
-  if (!q) return { status: 'none', q: null, a: null };
-  const a = answers.find(a => a.question_id === q.id);
-  if (a?.is_correct) return { status: 'correct', q, a };
-  // Essay pending grading → show as future/pending
-  if (a && !a.graded && q.type === 'essay' && a.user_answer) return { status: 'future', q, a };
-  if (a && a.user_answer) return { status: 'wrong', q, a };
-  // Published, no answer yet
-  if (q.is_published) {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-    if (dateStr === today) return { status: 'future', q, a: null }; // today → still open
-    return { status: 'missed', q, a: null };
+// Return an array of 7 dateStrings (YYYY-MM-DD) in Riyadh time, starting from this week's Saturday
+function getWeekDateStrings() {
+  // Get current day-of-week in Riyadh
+  const riyadhNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
+  const day = riyadhNow.getDay(); // 0=Sun,...,6=Sat
+  // Days from Saturday: Sat=0, Sun=1, Mon=2, Tue=3, Wed=4, Thu=5, Fri=6
+  const daysFromSat = day === 6 ? 0 : day + 1;
+  const result = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(riyadhNow);
+    d.setDate(riyadhNow.getDate() - daysFromSat + i);
+    result.push(d.toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' }));
   }
-  return { status: 'future', q, a: null };
+  return result;
+}
+
+function getDayStatus(dateStr, questions, answers) {
+  // Multiple questions can share the same publish_date
+  const qs = questions.filter(q => q.publish_date === dateStr);
+  if (qs.length === 0) return { status: 'none', entries: [] };
+  const today = getRiyadhToday();
+
+  const entries = qs.sort((a, b) => (a.day_number || 0) - (b.day_number || 0)).map(q => {
+    const a = answers.find(a => a.question_id === q.id);
+    let status;
+    if (a?.is_correct) {
+      status = 'correct';
+    } else if (a && !a.graded && q.type === 'essay' && a.user_answer) {
+      status = 'future';
+    } else if (a && a.user_answer) {
+      status = 'wrong';
+    } else if (q.is_published) {
+      status = dateStr === today ? 'future' : 'missed';
+    } else {
+      status = 'future';
+    }
+    return { q, a: a || null, status };
+  });
+
+  // Overall status: worst wins (correct < wrong < missed < future)
+  const priority = { correct: 0, wrong: 1, missed: 2, future: 3 };
+  const overall = entries.reduce((best, e) => {
+    return priority[e.status] > priority[best] ? e.status : best;
+  }, entries[0].status);
+
+  return { status: overall, entries, q: entries[0].q, a: entries[0].a };
 }
 
 function getPointsForDay(dayNumber) {
@@ -52,19 +78,16 @@ const STATUS_COLORS = {
 export default function WeeklyProgress({ questions = [], answers = [], userEmail = '' }) {
   const [selected, setSelected] = useState(null);
 
-  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
+  const todayStr = getRiyadhToday();
 
   const weekDays = useMemo(() => {
-    const sat = getWeekSaturday();
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(sat);
-      d.setDate(sat.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
+    const dateStrings = getWeekDateStrings();
+    return dateStrings.map((dateStr, i) => {
       const isToday = dateStr === todayStr;
-      const { status, q, a } = getDayStatus(dateStr, questions, answers, userEmail);
-      return { d, dateStr, dayName: DAYS[i], isToday, status, q, a };
+      const { status, entries, q, a } = getDayStatus(dateStr, questions, answers);
+      return { dateStr, dayName: DAYS[i], isToday, status, entries: entries || [], q, a };
     });
-  }, [questions, answers, userEmail]);
+  }, [questions, answers, todayStr]);
 
   return (
     <>
@@ -121,98 +144,110 @@ export default function WeeklyProgress({ questions = [], answers = [], userEmail
       </motion.div>
 
       <BottomSheet open={!!selected} onClose={() => setSelected(null)}>
-        {selected && <DayDetail day={selected} />}
+        {selected && <DayDetail day={selected} allAnswers={answers} />}
       </BottomSheet>
     </>
   );
 }
 
-function DayDetail({ day }) {
-  const hijriDate = toHijri(day.d);
+function DayDetail({ day, allAnswers }) {
+  // Use a local date from dateStr to avoid timezone issues
+  const dateParts = day.dateStr.split('-');
+  const localDate = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]));
+  const hijriDate = toHijri(localDate);
 
-  const statusMap = {
-    correct: { label: 'أجبت صحيح ✅', color: '#046B67' },
-    wrong: { label: 'أجبت خاطئ ❌', color: '#ef4444' },
-    missed: { label: 'فاتك هذا السؤال ⚠️', color: '#f59e0b' },
-    future: { label: day.q?.is_published ? 'السؤال وصل! انتظرك 📩' : 'لم يحن وقته بعد', color: '#94a3b8' },
-    none: { label: 'لا يوجد سؤال', color: '#94a3b8' },
-  };
-
-  const st = statusMap[day.status];
   const typeMap = { multiple_choice: 'اختيار من متعدد', true_false: 'صح أو خطأ', essay: 'مقالي' };
 
-  // Check if user has answered (opened the question)
-  const hasAnswered = !!day.a;
+  const entries = day.entries && day.entries.length > 0 ? day.entries : (day.q ? [{ q: day.q, a: day.a, status: day.status }] : []);
+
+  const statusLabels = {
+    correct: { label: 'أجبت صحيح ✅', color: '#046B67' },
+    wrong: { label: 'أجبت خاطئ ❌', color: '#ef4444' },
+    missed: { label: 'فاتك السؤال ⚠️', color: '#f59e0b' },
+    future: { label: 'لم يحن وقته بعد', color: '#94a3b8' },
+    none: { label: 'لا يوجد سؤال', color: '#94a3b8' },
+  };
 
   return (
     <div className="space-y-4">
       <div className="text-center space-y-1">
         <h3 className="text-xl font-bold text-foreground">{day.dayName}</h3>
         <p className="text-sm text-muted-foreground">{hijriDate}</p>
-        <span
-          className="inline-block px-3 py-1 rounded-full text-sm font-medium text-white mt-1"
-          style={{ background: st.color }}
-        >
-          {st.label}
-        </span>
       </div>
 
-      {day.q ? (
-        <div className="space-y-3">
-          <div className="card-surface p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">سؤال رقم {day.q.day_number}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground">
-                {typeMap[day.q.type] || day.q.type}
-              </span>
-            </div>
-            {/* Only show question text if user has answered */}
-            {hasAnswered ? (
-              <p className="text-sm font-medium leading-relaxed text-foreground">{day.q.text}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground italic">افتح الصندوق لرؤية السؤال 📦</p>
-            )}
-            <div className="flex items-center gap-2 pt-1">
-              <span className="text-xs text-muted-foreground">النقاط:</span>
-              <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>
-                {day.q.points || getPointsForDay(day.q.day_number)}
-              </span>
-            </div>
-          </div>
-
-          {hasAnswered && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary">
-                <span className="text-xs text-muted-foreground">إجابتك:</span>
-                <span className="text-sm font-medium text-foreground">{day.a.user_answer || '—'}</span>
-              </div>
-              {day.status !== 'future' && day.q?.correct_answer && (
-                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#046B6715' }}>
-                  <span className="text-xs text-muted-foreground">الإجابة الصحيحة:</span>
-                  <span className="text-sm font-bold" style={{ color: '#046B67' }}>{day.q.correct_answer}</span>
-                </div>
-              )}
-              {/* Admin note */}
-              {day.a?.admin_note && (
-                <div className="p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
-                  <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
-                  <p className="text-sm text-foreground">{day.a.admin_note}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {day.status === 'missed' && (
-            <div className="p-3 rounded-xl" style={{ background: '#f59e0b18' }}>
-              <p className="text-xs text-center" style={{ color: '#f59e0b' }}>
-                🔒 انتهى وقت هذا السؤال وأُغلق
-              </p>
-            </div>
-          )}
-        </div>
+      {entries.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground text-sm">لا يوجد سؤال لهذا اليوم</div>
       ) : (
-        <div className="text-center py-6 text-muted-foreground text-sm">
-          لا يوجد سؤال لهذا اليوم
+        <div className="space-y-4">
+          {entries.map(({ q, a, status }, idx) => {
+            const st = { ...statusLabels[status] };
+            if (status === 'future' && q?.is_published) st.label = 'السؤال وصل! انتظرك 📩';
+            const hasAnswered = !!a;
+            return (
+              <div key={q.id} className="space-y-3">
+                {entries.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground px-2">سؤال {idx + 1}</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
+                <span
+                  className="inline-block px-3 py-1 rounded-full text-sm font-medium text-white"
+                  style={{ background: st.color }}
+                >
+                  {st.label}
+                </span>
+
+                <div className="card-surface p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">سؤال رقم {q.day_number}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground">
+                      {typeMap[q.type] || q.type}
+                    </span>
+                  </div>
+                  {hasAnswered ? (
+                    <p className="text-sm font-medium leading-relaxed text-foreground">{q.text}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">افتح الصندوق لرؤية السؤال 📦</p>
+                  )}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-xs text-muted-foreground">النقاط:</span>
+                    <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>
+                      {q.points || getPointsForDay(q.day_number)}
+                    </span>
+                  </div>
+                </div>
+
+                {hasAnswered && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary">
+                      <span className="text-xs text-muted-foreground">إجابتك:</span>
+                      <span className="text-sm font-medium text-foreground">{a.user_answer || '—'}</span>
+                    </div>
+                    {status !== 'future' && q?.correct_answer && (
+                      <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#046B6715' }}>
+                        <span className="text-xs text-muted-foreground">الإجابة الصحيحة:</span>
+                        <span className="text-sm font-bold" style={{ color: '#046B67' }}>{q.correct_answer}</span>
+                      </div>
+                    )}
+                    {a?.admin_note && (
+                      <div className="p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
+                        <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
+                        <p className="text-sm text-foreground">{a.admin_note}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {status === 'missed' && (
+                  <div className="p-3 rounded-xl" style={{ background: '#f59e0b18' }}>
+                    <p className="text-xs text-center" style={{ color: '#f59e0b' }}>🔒 انتهى وقت هذا السؤال وأُغلق</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

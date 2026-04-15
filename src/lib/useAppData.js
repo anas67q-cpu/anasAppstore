@@ -5,7 +5,7 @@ const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
 const cache = {
   user: null, stats: null, questions: null, answers: null,
-  allStats: null, settings: null, userBadges: null, allBadges: null, lastFetch: {},
+  allStats: null, settings: null, userBadges: null, allBadges: null, allUserBadges: null, lastFetch: {},
 };
 const CACHE_TTL = 30000;
 
@@ -22,6 +22,7 @@ export default function useAppData() {
   const [settings, setSettings] = useState(cache.settings || []);
   const [userBadges, setUserBadges] = useState(cache.userBadges || []);
   const [allBadges, setAllBadges] = useState(cache.allBadges || []);
+  const [allUserBadges, setAllUserBadges] = useState(cache.allUserBadges || []);
   const [loading, setLoading] = useState(!cache.user);
   const mounted = useRef(true);
 
@@ -89,15 +90,23 @@ export default function useAppData() {
     return b;
   }, []);
 
+  const fetchAllUserBadges = useCallback(async () => {
+    if (!shouldRefetch('allUserBadges') && cache.allUserBadges?.length) return cache.allUserBadges;
+    const b = await base44.entities.UserBadge.list('-created_date', 500);
+    cache.allUserBadges = b; cache.lastFetch.allUserBadges = Date.now();
+    if (mounted.current) setAllUserBadges(b);
+    return b;
+  }, []);
+
   const initAll = useCallback(async () => {
     setLoading(true);
     const u = await fetchUser();
     await Promise.all([
       fetchStats(u.email), fetchQuestions(), fetchAnswers(u.email),
-      fetchAllStats(), fetchSettings(), fetchUserBadges(u.email), fetchAllBadges(),
+      fetchAllStats(), fetchSettings(), fetchUserBadges(u.email), fetchAllBadges(), fetchAllUserBadges(),
     ]);
     if (mounted.current) setLoading(false);
-  }, [fetchUser, fetchStats, fetchQuestions, fetchAnswers, fetchAllStats, fetchSettings, fetchUserBadges, fetchAllBadges]);
+  }, [fetchUser, fetchStats, fetchQuestions, fetchAnswers, fetchAllStats, fetchSettings, fetchUserBadges, fetchAllBadges, fetchAllUserBadges]);
 
   const refreshStats = useCallback(async () => {
     if (user) { cache.lastFetch.stats = 0; await fetchStats(user.email); }
@@ -121,7 +130,7 @@ export default function useAppData() {
   }, []);
 
   return {
-    user, stats, questions, answers, allStats, settings, userBadges, allBadges, loading,
+    user, stats, questions, answers, allStats, settings, userBadges, allBadges, allUserBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
   };
 }

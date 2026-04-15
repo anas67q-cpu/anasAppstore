@@ -5,7 +5,7 @@ import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import html2canvas from 'html2canvas';
 
-export default function BadgesSection({ allBadges = [], userBadges = [], cardTemplateUrl, userName = '' }) {
+export default function BadgesSection({ allBadges = [], userBadges = [], allUserBadges = [], cardTemplateUrl, userName = '' }) {
   const [selected, setSelected] = useState(null);
 
   const earnedSet = new Set(userBadges.map(b => b.badge_name));
@@ -67,7 +67,7 @@ export default function BadgesSection({ allBadges = [], userBadges = [], cardTem
         {selected && (
           <BadgeDetail
             item={selected}
-            userBadges={userBadges}
+            allUserBadges={allUserBadges}
             cardTemplateUrl={cardTemplateUrl}
             userName={userName}
           />
@@ -77,18 +77,19 @@ export default function BadgesSection({ allBadges = [], userBadges = [], cardTem
   );
 }
 
-function BadgeDetail({ item, userBadges, cardTemplateUrl, userName }) {
+function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
   const { badge, earned, ub } = item;
   const cardRef = useRef(null);
   const [saving, setSaving] = useState(false);
 
-  const ownersOfThisBadge = userBadges.filter(b => b.badge_name === badge.name);
+  // Find all users who own this badge across ALL users
+  const ownersOfThisBadge = allUserBadges.filter(b => b.badge_name === badge.name);
 
   const handleSave = async () => {
     if (!cardRef.current || !earned) return;
     setSaving(true);
-    const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
-    const url = canvas.toDataURL('image/png');
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
+    const url = canvas.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
     a.href = url;
     a.download = `badge-${badge.name}.png`;
@@ -121,7 +122,7 @@ function BadgeDetail({ item, userBadges, cardTemplateUrl, userName }) {
         )}
       </div>
 
-      {/* Owners */}
+      {/* Owners — from ALL users */}
       <div className="p-3 rounded-2xl bg-secondary text-center">
         {ownersOfThisBadge.length > 0 ? (
           <>
@@ -144,33 +145,56 @@ function BadgeDetail({ item, userBadges, cardTemplateUrl, userName }) {
             <p className="text-xs text-muted-foreground mt-1">تاريخ الحصول</p>
           </div>
 
+          {/* Save progress bar */}
+          {saving && (
+            <div className="w-full h-1.5 rounded-full overflow-hidden bg-secondary">
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: '100%' }}
+                transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                className="h-full w-1/3 rounded-full"
+                style={{ background: 'hsl(var(--primary))' }}
+              />
+            </div>
+          )}
+
           <button onClick={handleSave} disabled={saving}
             className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: 'hsl(var(--primary))' }}>
-            <Download className="w-4 h-4" />
-            {saving ? 'جاري الحفظ...' : 'حفظ بطاقة الشارة'}
+            {saving
+              ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تجهيز البطاقة...</>
+              : <><Download className="w-4 h-4" />حفظ بطاقة الشارة</>
+            }
           </button>
         </>
       )}
 
-      {/* Hidden share card */}
+      {/* Hidden share card — highest quality */}
       {earned && ub && (
         <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
           <div ref={cardRef} style={{
-            width: 400, height: 400, borderRadius: 32, overflow: 'hidden',
+            width: 800, height: 800, borderRadius: 48, overflow: 'hidden',
             position: 'relative', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', gap: 14,
-            fontFamily: 'Rubik, sans-serif', direction: 'rtl', padding: 40,
+            alignItems: 'center', justifyContent: 'center', gap: 18,
+            fontFamily: 'Rubik, sans-serif', direction: 'rtl', padding: 60,
             background: cardTemplateUrl
               ? `url(${cardTemplateUrl}) center/cover no-repeat`
               : `linear-gradient(135deg, ${badge.color || '#046B67'} 0%, #034b48 100%)`,
           }}>
             {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              {badge.icon_url && <img src={badge.icon_url} alt="" style={{ width: 80, height: 80, objectFit: 'cover' }} />}
-              <div style={{ color: '#fff', fontSize: 26, fontWeight: 900, textAlign: 'center' }}>{badge.name}</div>
-              {badge.description && <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, textAlign: 'center', lineHeight: 1.5 }}>{badge.description}</div>}
-              <div style={{ marginTop: 6, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{userName}</div>
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              {/* Name at top */}
+              <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
+              {/* Badge icon */}
+              {badge.icon_url
+                ? <img src={badge.icon_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover' }} crossOrigin="anonymous" />
+                : <div style={{ width: 160, height: 160, borderRadius: 32, background: badge.color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 80 }}>🏅</span>
+                  </div>
+              }
+              <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{badge.name}</div>
+              {badge.description && <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, textAlign: 'center', lineHeight: 1.5, maxWidth: 580 }}>{badge.description}</div>}
             </div>
           </div>
         </div>

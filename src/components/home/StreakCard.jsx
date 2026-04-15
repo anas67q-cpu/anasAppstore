@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import { Share2, Download } from 'lucide-react';
 
 function arabicDays(n) {
   if (n === 0) return '٠ أيام';
@@ -11,20 +11,23 @@ function arabicDays(n) {
   return `${n} يومًا`;
 }
 
-export default function StreakCard({ stats, streakLogoUrl }) {
+export default function StreakCard({ stats, streakLogoUrl, cardTemplateUrl }) {
   const current = stats?.current_streak || 0;
   const highest = stats?.highest_streak || 0;
   const cardRef = useRef(null);
   const userName = stats?.user_name || '';
+  const [saving, setSaving] = useState(false);
 
   const handleShare = async () => {
     if (!cardRef.current) return;
-    const canvas = await html2canvas(cardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
-    const url = canvas.toDataURL('image/png');
+    setSaving(true);
+    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
+    const url = canvas.toDataURL('image/png', 1.0);
     const a = document.createElement('a');
     a.href = url;
     a.download = `streak-${userName}.png`;
     a.click();
+    setSaving(false);
   };
 
   return (
@@ -39,28 +42,61 @@ export default function StreakCard({ stats, streakLogoUrl }) {
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={handleShare}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white tap-scale"
+          disabled={saving}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white tap-scale disabled:opacity-60"
           style={{ background: 'hsl(var(--primary))' }}
         >
-          <Download className="w-3.5 h-3.5" />
-          حفظ
+          {saving ? (
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+          ) : (
+            <Download className="w-3.5 h-3.5" />
+          )}
+          {saving ? 'جاري التجهيز...' : 'حفظ'}
         </motion.button>
       </div>
 
+      {/* Saving progress bar */}
+      {saving && (
+        <motion.div
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{ opacity: 1, scaleX: 1 }}
+          className="w-full h-1 rounded-full overflow-hidden bg-secondary"
+          style={{ transformOrigin: 'right' }}
+        >
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+            className="h-full w-1/3 rounded-full"
+            style={{ background: 'hsl(var(--primary))' }}
+          />
+        </motion.div>
+      )}
+
       {/* Streak display */}
       <div className="flex items-center gap-5">
-        {/* Flame */}
-        <div className="relative flex-shrink-0">
-          <motion.div
-            animate={{ scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-6xl select-none leading-none"
-          >
-            🔥
-          </motion.div>
-          {current > 0 && (
+        {/* Logo / Flame */}
+        <div className="relative flex-shrink-0 w-16 h-16 flex items-center justify-center">
+          {streakLogoUrl ? (
             <motion.div
-              animate={{ opacity: [0.5, 1, 0.5] }}
+              animate={current >= 1 ? { scale: [1, 1.08, 1], opacity: [0.85, 1, 0.85] } : {}}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="w-full h-full"
+            >
+              <img src={streakLogoUrl} alt="streak" className="w-full h-full object-contain" />
+            </motion.div>
+          ) : (
+            <motion.div
+              animate={{ scale: [1, 1.06, 1], opacity: [0.85, 1, 0.85] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+              className="text-6xl select-none leading-none"
+            >
+              🔥
+            </motion.div>
+          )}
+          {current >= 1 && (
+            <motion.div
+              animate={{ opacity: [0.4, 0.9, 0.4] }}
               transition={{ duration: 2.2, repeat: Infinity }}
               className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-2 rounded-full blur-sm"
               style={{ background: '#f97316' }}
@@ -88,26 +124,38 @@ export default function StreakCard({ stats, streakLogoUrl }) {
         </div>
       </div>
 
-      {/* Hidden shareable card */}
+      {/* Hidden shareable card — uses cardTemplateUrl (الشكل الموحد) */}
       <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
         <div ref={cardRef} style={{
-          width: 400, height: 400,
-          borderRadius: 32,
+          width: 800, height: 800,
+          borderRadius: 48,
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, #046B67 0%, #034b48 100%)',
+          position: 'relative',
+          background: cardTemplateUrl
+            ? `url(${cardTemplateUrl}) center/cover no-repeat`
+            : 'linear-gradient(135deg, #046B67 0%, #034b48 100%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: 40, gap: 16, fontFamily: 'Rubik, sans-serif',
+          padding: 60, gap: 20, fontFamily: 'Rubik, sans-serif',
           direction: 'rtl',
         }}>
-          {streakLogoUrl && <img src={streakLogoUrl} alt="" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 12 }} />}
-          <div style={{ fontSize: 72, lineHeight: 1 }}>🔥</div>
-          <div style={{ color: '#fff', fontSize: 48, fontWeight: 900, lineHeight: 1 }}>{current}</div>
-          <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 18, fontWeight: 600 }}>يوم متتالٍ</div>
-          <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, marginTop: 8 }}>{userName}</div>
-          <div style={{ marginTop: 12, padding: '8px 20px', background: 'rgba(255,255,255,0.15)', borderRadius: 20 }}>
-            <span style={{ color: '#fff', fontSize: 13 }}>🏆 الأعلى: {highest} يوم</span>
+          {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />}
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            {/* Name at top */}
+            <div style={{ color: '#fff', fontSize: 36, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 20, textAlign: 'center' }}>سلسلة الإجابات الصحيحة</div>
+            {/* Logo */}
+            {streakLogoUrl ? (
+              <img src={streakLogoUrl} alt="" style={{ width: 140, height: 140, objectFit: 'contain' }} crossOrigin="anonymous" />
+            ) : (
+              <div style={{ fontSize: 120, lineHeight: 1 }}>🔥</div>
+            )}
+            {/* Number */}
+            <div style={{ color: '#f97316', fontSize: 96, fontWeight: 900, lineHeight: 1 }}>{current}</div>
+            <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 28, fontWeight: 700 }}>{arabicDays(current)} متتالية</div>
+            <div style={{ marginTop: 16, padding: '12px 32px', background: 'rgba(255,255,255,0.15)', borderRadius: 30 }}>
+              <span style={{ color: '#fff', fontSize: 22 }}>🏆 الأعلى: {arabicDays(highest)}</span>
+            </div>
           </div>
-          <div style={{ position: 'absolute', bottom: 20, color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>مسابقة أنس</div>
         </div>
       </div>
     </motion.div>

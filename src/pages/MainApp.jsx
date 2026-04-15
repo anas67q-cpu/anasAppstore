@@ -15,7 +15,7 @@ const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
 export default function MainApp() {
   const {
-    user, stats, questions, answers, allStats, settings, userBadges, allBadges, loading,
+    user, stats, questions, answers, allStats, settings, userBadges, allBadges, allUserBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
   } = useAppData();
 
@@ -47,7 +47,7 @@ export default function MainApp() {
         user_name: stats?.user_name || user?.full_name || '',
         action: 'login',
         details: 'دخل إلى التطبيق',
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
       }).catch(() => {});
     }
   }, [user?.email]);
@@ -149,7 +149,7 @@ export default function MainApp() {
                 user_name: stats?.user_name || user?.full_name || '',
                 action: 'logout',
                 details: 'غادر التطبيق',
-                timestamp: new Date().toISOString(),
+                timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
               }).catch(() => {});
             }
             base44.auth.logout();
@@ -165,7 +165,7 @@ export default function MainApp() {
         <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
           <HomePage
             user={user} stats={stats} questions={questions} answers={answers}
-            userBadges={userBadges} allBadges={allBadges || []} settings={settings}
+            userBadges={userBadges} allBadges={allBadges || []} allUserBadges={allUserBadges || []} settings={settings}
             cardTemplateUrl={cardTemplateUrl} streakLogoUrl={streakLogoUrl} userName={userName}
           />
         </div>
@@ -178,7 +178,7 @@ export default function MainApp() {
         <div style={{ display: activeTab === 'profile' ? 'block' : 'none' }}>
           <ProfilePage
             user={user} stats={stats} allStats={allStats}
-            userBadges={userBadges} allBadges={allBadges || []}
+            userBadges={userBadges} allBadges={allBadges || []} allUserBadges={allUserBadges || []}
             updateUserName={updateUserName} fetchAllStats={fetchAllStats}
             cardTemplateUrl={cardTemplateUrl} streakLogoUrl={streakLogoUrl} userName={userName}
           />
