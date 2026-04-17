@@ -29,7 +29,7 @@ function getWeekDateStrings() {
 }
 
 function getDayStatus(dateStr, questions, answers) {
-  // Multiple questions can share the same publish_date
+  // Match questions by publish_date if available, otherwise skip
   const qs = questions.filter(q => q.publish_date === dateStr);
   if (qs.length === 0) return { status: 'none', entries: [] };
   const today = getRiyadhToday();

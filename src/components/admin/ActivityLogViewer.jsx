@@ -11,8 +11,10 @@ const ACTION_MAP = {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleString('ar-SA', {
-    timeZone: 'Asia/Riyadh',
+  // Add 3 hours to compensate for server time offset
+  const d = new Date(new Date(dateStr).getTime() + 3 * 60 * 60 * 1000);
+  return d.toLocaleString('ar-SA', {
+    timeZone: 'UTC',
     weekday: 'short', hour: '2-digit', minute: '2-digit',
     day: '2-digit', month: '2-digit',
   });

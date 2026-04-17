@@ -16,7 +16,6 @@ export default function QuestionForm({ question, onSaved }) {
   });
   const [dayNumber, setDayNumber] = useState(question?.day_number || 1);
   const [timeLimit, setTimeLimit] = useState(question?.time_limit || 90);
-  const [publishDate, setPublishDate] = useState(question?.publish_date || '');
   const [saving, setSaving] = useState(false);
 
   const suggestedPoints = dayNumber <= 10 ? 1 : dayNumber <= 20 ? 2 : 3;
@@ -42,7 +41,6 @@ export default function QuestionForm({ question, onSaved }) {
       correct_answer: finalCorrect,
       day_number: Number(dayNumber),
       time_limit: Number(timeLimit),
-      publish_date: publishDate,
       points: Number(points),
     };
     if (question) {
@@ -127,7 +125,7 @@ export default function QuestionForm({ question, onSaved }) {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">النقاط</label>
           <input type="number" value={points} onChange={e => setPoints(e.target.value)} min={1} className={inputClass} />
@@ -137,11 +135,10 @@ export default function QuestionForm({ question, onSaved }) {
           <label className="text-xs text-muted-foreground mb-1 block">الوقت (ث)</label>
           <input type="number" value={timeLimit} onChange={e => setTimeLimit(e.target.value)} className={inputClass} />
         </div>
-        <div>
-          <label className="text-xs text-muted-foreground mb-1 block">تاريخ النشر</label>
-          <input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} className={inputClass} />
-        </div>
       </div>
+      <p className="text-xs text-muted-foreground text-center py-1">
+        💡 لتفعيل السؤال، استخدم أيقونة العين في قائمة الأسئلة
+      </p>
 
       <button
         onClick={handleSave}

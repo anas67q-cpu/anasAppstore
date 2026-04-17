@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Download } from 'lucide-react';
+import { Award, Share2 } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import html2canvas from 'html2canvas';
@@ -61,16 +61,25 @@ function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allUserBadges }) {
   // Who has this badge — from all users
   const ownersOfThisBadge = allUserBadges.filter(b => b.badge_name === ub.badge_name);
 
-  const handleSave = async () => {
+  const handleShare = async () => {
     if (!cardRef.current) return;
     setSaving(true);
     const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
-    const url = canvas.toDataURL('image/png', 1.0);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `badge-${ub.badge_name}-${userName}.png`;
-    a.click();
-    setSaving(false);
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `badge-${ub.badge_name}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: ub.badge_name });
+      } else {
+        // Fallback: download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `badge-${ub.badge_name}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      setSaving(false);
+    }, 'image/png', 1.0);
   };
 
   return (
@@ -120,14 +129,14 @@ function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allUserBadges }) {
       )}
 
       <button
-        onClick={handleSave}
+        onClick={handleShare}
         disabled={saving}
         className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
         style={{ background: 'hsl(var(--primary))' }}
       >
         {saving
           ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تجهيز البطاقة...</>
-          : <><Download className="w-4 h-4" />حفظ بطاقة الشارة</>
+          : <><Share2 className="w-4 h-4" />نشر بطاقة الشارة</>
         }
       </button>
 
@@ -146,9 +155,9 @@ function BadgeSheetDetail({ ub, cardTemplateUrl, userName, allUserBadges }) {
             <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
             <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
             {ub.badge_icon_url
-              ? <img src={ub.badge_icon_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover' }} crossOrigin="anonymous" />
-              : <div style={{ width: 160, height: 160, borderRadius: 32, background: ub.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 80 }}>🏅</span>
+              ? <img src={ub.badge_icon_url} alt="" style={{ width: 320, height: 320, objectFit: 'cover' }} crossOrigin="anonymous" />
+              : <div style={{ width: 320, height: 320, borderRadius: 48, background: ub.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 160 }}>🏅</span>
                 </div>
             }
             <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{ub.badge_name}</div>

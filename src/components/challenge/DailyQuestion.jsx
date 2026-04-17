@@ -42,9 +42,8 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const timerRef = useRef(null);
   const isAdmin = user?.email === ADMIN_EMAIL;
 
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-  // Support multiple questions per day — sorted by day_number ascending
-  const todayQs = questions.filter(q => q.publish_date === today && q.is_published)
+  // Show all published questions — sorted by day_number ascending
+  const todayQs = questions.filter(q => q.is_published)
     .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
 
   // Find the first unanswered question (or fallback to last if all answered)
