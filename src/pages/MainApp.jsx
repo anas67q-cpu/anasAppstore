@@ -5,6 +5,7 @@ import ChallengePage from '@/pages/ChallengePage';
 import ProfilePage from '@/pages/ProfilePage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import NewBadgeModal from '@/components/NewBadgeModal';
+import SplashScreen from '@/components/SplashScreen';
 import useAppData from '@/lib/useAppData';
 import { useTheme } from '@/lib/useTheme';
 import { base44 } from '@/api/base44Client';
@@ -25,6 +26,7 @@ export default function MainApp() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [ensuredStats, setEnsuredStats] = useState(false);
   const [newBadgeNotif, setNewBadgeNotif] = useState(null);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Ensure user stats
   useEffect(() => {
@@ -73,6 +75,13 @@ export default function MainApp() {
     }
   }, [userBadges, user?.email]);
 
+  // Register service worker for image caching
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  }, []);
+
   const isAdmin = user?.role === 'admin';
 
   // Parse settings
@@ -81,7 +90,12 @@ export default function MainApp() {
   const imageSettings = settingsObj['images'] || {};
   const cardTemplateUrl = imageSettings.card_template;
   const streakLogoUrl = imageSettings.streak_logo;
+  const competitionLogoUrl = imageSettings.competition_logo;
   const userName = stats?.user_name || user?.full_name || '';
+
+  if (showSplash) {
+    return <SplashScreen logoUrl={competitionLogoUrl} onDone={() => setShowSplash(false)} />;
+  }
 
   if (loading) {
     return (

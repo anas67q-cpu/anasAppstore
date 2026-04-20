@@ -1,13 +1,13 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download } from 'lucide-react';
+import { X, Share2 } from 'lucide-react';
 import { Award } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import confetti from 'canvas-confetti';
 
 export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClose }) {
   const cardRef = useRef(null);
-  const [saving, setSaving] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     if (badge) {
@@ -17,16 +17,26 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
     }
   }, [badge]);
 
-  const handleSave = async () => {
+  const handleShare = async () => {
     if (!cardRef.current) return;
-    setSaving(true);
-    const canvas = await html2canvas(cardRef.current, { scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000 });
-    const url = canvas.toDataURL('image/png', 1.0);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `badge-${badge?.badge_name}-${userName}.png`;
-    a.click();
-    setSaving(false);
+    setSharing(true);
+    const canvas = await html2canvas(cardRef.current, {
+      scale: 4, useCORS: true, allowTaint: true, backgroundColor: null, imageTimeout: 15000
+    });
+    canvas.toBlob(async (blob) => {
+      const file = new File([blob], `badge-${badge?.badge_name}.png`, { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: `حصلت على شارة ${badge?.badge_name}!` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `badge-${badge?.badge_name}-${userName}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+      setSharing(false);
+    }, 'image/png', 1.0);
   };
 
   return (
@@ -78,10 +88,10 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
               <div style={{ color: '#fff', fontSize: 18, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
               <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, textAlign: 'center' }}>حصلت على شارة</div>
               {badge.badge_icon_url ? (
-                <img src={badge.badge_icon_url} alt="" style={{ width: 72, height: 72, objectFit: 'cover' }} />
+                <img src={badge.badge_icon_url} alt="" style={{ width: 100, height: 100, objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: 72, height: 72, borderRadius: 16, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 36 }}>🏅</span>
+                <div style={{ width: 100, height: 100, borderRadius: 16, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: 50 }}>🏅</span>
                 </div>
               )}
               <div style={{ color: '#fff', fontSize: 18, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
@@ -98,8 +108,7 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
             transition={{ delay: 0.5 }}
             className="mt-6 w-full max-w-xs space-y-3"
           >
-            {/* Progress bar when saving */}
-            {saving && (
+            {sharing && (
               <div className="w-full h-1.5 rounded-full overflow-hidden bg-white/20">
                 <motion.div
                   initial={{ x: '-100%' }}
@@ -110,19 +119,19 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
               </div>
             )}
             <button
-              onClick={handleSave}
-              disabled={saving}
+              onClick={handleShare}
+              disabled={sharing}
               className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
               style={{ background: 'hsl(var(--primary))' }}
             >
-              {saving
+              {sharing
                 ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تجهيز البطاقة...</>
-                : <><Download className="w-4 h-4" />حفظ البطاقة</>
+                : <><Share2 className="w-4 h-4" />نشر بطاقة الشارة</>
               }
             </button>
           </motion.div>
 
-          {/* Hidden high-quality card for export */}
+          {/* Hidden high-quality card for export — badge icon 320x320 */}
           <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
             <div ref={cardRef} style={{
               width: 800, height: 800, borderRadius: 48, overflow: 'hidden',
@@ -138,9 +147,9 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
                 <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
                 <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
                 {badge.badge_icon_url
-                  ? <img src={badge.badge_icon_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover' }} crossOrigin="anonymous" />
-                  : <div style={{ width: 160, height: 160, borderRadius: 32, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: 80 }}>🏅</span>
+                  ? <img src={badge.badge_icon_url} alt="" style={{ width: 320, height: 320, objectFit: 'cover' }} crossOrigin="anonymous" />
+                  : <div style={{ width: 320, height: 320, borderRadius: 48, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 160 }}>🏅</span>
                     </div>
                 }
                 <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
