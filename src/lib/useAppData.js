@@ -129,6 +129,55 @@ export default function useAppData() {
     return () => { mounted.current = false; };
   }, []);
 
+  // Real-time subscriptions — update UI instantly when data changes
+  useEffect(() => {
+    if (!user?.email) return;
+
+    const unsubAnswer = base44.entities.Answer.subscribe((event) => {
+      if (event.data?.user_email !== user.email) return;
+      if (!mounted.current) return;
+      if (event.type === 'create') {
+        setAnswers(prev => {
+          if (prev.find(a => a.id === event.id)) return prev;
+          return [event.data, ...prev];
+        });
+      } else if (event.type === 'update') {
+        setAnswers(prev => prev.map(a => a.id === event.id ? event.data : a));
+      } else if (event.type === 'delete') {
+        setAnswers(prev => prev.filter(a => a.id !== event.id));
+      }
+    });
+
+    const unsubStats = base44.entities.UserStats.subscribe((event) => {
+      if (event.data?.user_email !== user.email) return;
+      if (!mounted.current) return;
+      if (event.type === 'update' || event.type === 'create') {
+        setStats(event.data);
+        cache.stats = event.data;
+      }
+      // Also refresh allStats for leaderboard
+      cache.lastFetch.allStats = 0;
+      base44.entities.UserStats.list('-total_points', 100).then(s => {
+        const filtered = s.filter(u => u.user_email !== ADMIN_EMAIL);
+        cache.allStats = filtered;
+        if (mounted.current) setAllStats(filtered);
+      });
+    });
+
+    const unsubBadge = base44.entities.UserBadge.subscribe((event) => {
+      if (event.data?.user_email !== user.email) return;
+      if (!mounted.current) return;
+      cache.lastFetch.userBadges = 0;
+      fetchUserBadges(user.email);
+    });
+
+    return () => {
+      unsubAnswer();
+      unsubStats();
+      unsubBadge();
+    };
+  }, [user?.email]);
+
   return {
     user, stats, questions, answers, allStats, settings, userBadges, allBadges, allUserBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
