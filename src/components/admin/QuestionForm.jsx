@@ -1,6 +1,13 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
+import NativeSelect from '@/components/ui/NativeSelect';
+
+const TYPE_OPTIONS = [
+  { value: 'multiple_choice', label: 'اختيار من متعدد' },
+  { value: 'true_false', label: 'صح أو خطأ' },
+  { value: 'essay', label: 'مقالي' },
+];
 
 export default function QuestionForm({ question, onSaved }) {
   const [text, setText] = useState(question?.text || '');
@@ -35,8 +42,7 @@ export default function QuestionForm({ question, onSaved }) {
     playTap();
     const finalCorrect = getFinalCorrectAnswer();
     const data = {
-      text,
-      type,
+      text, type,
       options: type === 'multiple_choice' ? options.filter(o => o.trim()) : [],
       correct_answer: finalCorrect,
       day_number: Number(dayNumber),
@@ -64,11 +70,12 @@ export default function QuestionForm({ question, onSaved }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">النوع</label>
-          <select value={type} onChange={e => setType(e.target.value)} className={inputClass}>
-            <option value="multiple_choice">اختيار من متعدد</option>
-            <option value="true_false">صح أو خطأ</option>
-            <option value="essay">مقالي</option>
-          </select>
+          <NativeSelect
+            value={type}
+            onChange={setType}
+            options={TYPE_OPTIONS}
+            label="نوع السؤال"
+          />
         </div>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">اليوم</label>
@@ -90,6 +97,7 @@ export default function QuestionForm({ question, onSaved }) {
               <div key={i} className="flex gap-2 items-center">
                 <button
                   type="button"
+                  aria-label={`تعيين الخيار ${i + 1} كإجابة صحيحة`}
                   onClick={() => setCorrectOptionIndex(i)}
                   className="w-5 h-5 rounded-full border-2 flex-shrink-0 transition-all"
                   style={{

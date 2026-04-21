@@ -35,6 +35,9 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/" element={<MainApp />} />
+      <Route path="/home" element={<MainApp />} />
+      <Route path="/challenge" element={<MainApp />} />
+      <Route path="/profile" element={<MainApp />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

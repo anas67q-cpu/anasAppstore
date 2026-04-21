@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { Home, MessageCircleQuestion, UserCircle } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
 
+const LABELS = { home: 'الرئيسية', challenge: 'التحدي', profile: 'حسابي' };
+
 const tabs = [
   { id: 'home', icon: Home },
   { id: 'challenge', icon: MessageCircleQuestion },
@@ -22,6 +24,7 @@ export default function TabBar({ activeTab, onTabChange }) {
           return (
             <button
               key={tab.id}
+              aria-label={LABELS[tab.id]}
               onClick={() => { playTap(); onTabChange(tab.id); }}
               className="relative flex flex-col items-center px-6 py-1 tap-scale"
             >
