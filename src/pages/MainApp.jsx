@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import TabBar from '@/components/TabBar';
 import HomePage from '@/pages/HomePage';
@@ -13,16 +13,7 @@ import { base44 } from '@/api/base44Client';
 import { Settings, Sun, Moon, LogOut, RefreshCw } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
 
-const ADMIN_EMAIL = 'anas6.7q@gmail.com';
-
 const TAB_ORDER = ['home', 'challenge', 'profile'];
-
-const pageVariants = {
-  enter: (dir) => ({ x: dir > 0 ? '40%' : '-40%', opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir) => ({ x: dir > 0 ? '-40%' : '40%', opacity: 0 }),
-};
-const pageTransition = { type: 'tween', ease: [0.25, 0.46, 0.45, 0.94], duration: 0.28 };
 
 function PullToRefresh({ onRefresh, children }) {
   const startY = useRef(null);
@@ -40,9 +31,8 @@ function PullToRefresh({ onRefresh, children }) {
     if (startY.current === null) return;
     const dy = e.touches[0].clientY - startY.current;
     if (dy < 0) { startY.current = null; return; }
-    const p = Math.min(dy / THRESHOLD, 1);
     setPulling(true);
-    setProgress(p);
+    setProgress(Math.min(dy / THRESHOLD, 1));
   }, []);
 
   const onTouchEnd = useCallback(async () => {
@@ -53,23 +43,67 @@ function PullToRefresh({ onRefresh, children }) {
   }, [progress, onRefresh]);
 
   return (
-    <div
-      className="h-full overflow-y-auto"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
+    <div className="h-full overflow-y-auto" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       {pulling && (
         <div className="flex justify-center pt-2 pb-1">
-          <motion.div
-            animate={{ rotate: progress >= 1 ? 360 : progress * 180, scale: 0.7 + progress * 0.3 }}
-            transition={{ duration: 0.1 }}
-          >
+          <motion.div animate={{ rotate: progress >= 1 ? 360 : progress * 180, scale: 0.7 + progress * 0.3 }} transition={{ duration: 0.1 }}>
             <RefreshCw className="w-5 h-5" style={{ color: 'hsl(var(--primary))', opacity: progress }} />
           </motion.div>
         </div>
       )}
       {children}
+    </div>
+  );
+}
+
+// Shell that keeps all tabs mounted (preserves scroll + state)
+function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeTab = TAB_ORDER.find(t => location.pathname.startsWith(`/${t}`)) || 'home';
+
+  const handleTabChange = (tab) => {
+    if (tab === activeTab) return;
+    playTap();
+    navigate(`/${tab}`);
+  };
+
+  return (
+    <div className="flex-1 overflow-hidden relative">
+      {/* Keep all tabs mounted to preserve scroll position */}
+      {TAB_ORDER.map((tab) => (
+        <div
+          key={tab}
+          className="absolute inset-0 transition-opacity duration-200"
+          style={{
+            zIndex: tab === activeTab ? 1 : 0,
+            pointerEvents: tab === activeTab ? 'auto' : 'none',
+            opacity: tab === activeTab ? 1 : 0,
+          }}
+        >
+          {tab === 'home' && (
+            <PullToRefresh onRefresh={handleRefresh}>
+              <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
+                <HomePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} allStats={sharedProps.allStats} />
+              </div>
+            </PullToRefresh>
+          )}
+          {tab === 'challenge' && (
+            <PullToRefresh onRefresh={handleRefresh}>
+              <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
+                <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
+              </div>
+            </PullToRefresh>
+          )}
+          {tab === 'profile' && (
+            <div className="h-full overflow-y-auto px-4 pt-4" style={{ paddingBottom: 100 }}>
+              <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
+            </div>
+          )}
+        </div>
+      ))}
+      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
   );
 }
@@ -82,21 +116,12 @@ export default function MainApp() {
 
   const displayName = stats?.user_name || user?.full_name || 'مرحباً';
   const { theme, toggle: toggleTheme } = useTheme();
-  const [showAdmin, setShowAdmin] = useState(false);
   const [ensuredStats, setEnsuredStats] = useState(false);
   const [newBadgeNotif, setNewBadgeNotif] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  const activeTab = TAB_ORDER.find(t => location.pathname === `/${t}`) || 'home';
-
-  const handleTabChange = (tab) => {
-    if (tab === activeTab) return;
-    playTap();
-    navigate(`/${tab}`);
-  };
 
   // Redirect / → /home
   useEffect(() => {
@@ -113,8 +138,7 @@ export default function MainApp() {
     if (user && !stats && !ensuredStats && !loading) {
       setEnsuredStats(true);
       base44.entities.UserStats.create({
-        user_email: user.email,
-        user_name: user.full_name || '',
+        user_email: user.email, user_name: user.full_name || '',
         total_correct: 0, total_wrong: 0, total_missed: 0,
         total_points: 0, current_streak: 0, highest_streak: 0,
       }).then(() => refreshStats());
@@ -125,10 +149,8 @@ export default function MainApp() {
   useEffect(() => {
     if (user && stats) {
       base44.entities.ActivityLog.create({
-        user_email: user.email,
-        user_name: stats?.user_name || user?.full_name || '',
-        action: 'login',
-        details: 'دخل إلى التطبيق',
+        user_email: user.email, user_name: stats?.user_name || user?.full_name || '',
+        action: 'login', details: 'دخل إلى التطبيق',
         timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
       }).catch(() => {});
     }
@@ -136,7 +158,7 @@ export default function MainApp() {
 
   // New badge notification
   useEffect(() => {
-    if (!user || !userBadges || userBadges.length === 0) return;
+    if (!user || !userBadges?.length) return;
     const sessionKey = `badge_notif_seen_${user.email}`;
     if (sessionStorage.getItem(sessionKey)) return;
     const shownKey = `badge_shown_ids_${user.email}`;
@@ -153,6 +175,7 @@ export default function MainApp() {
   }, [userBadges, user?.email]);
 
   const isAdmin = user?.role === 'admin';
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   const settingsObj = {};
   (settings || []).forEach(s => { if (s.key) settingsObj[s.key] = s; });
@@ -176,143 +199,80 @@ export default function MainApp() {
     );
   }
 
-  if (showAdmin) {
-    return (
-      <div className="h-full overflow-y-auto" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
-        <AdminDashboard onBack={() => setShowAdmin(false)} />
-      </div>
-    );
-  }
-
   const sharedProps = {
     user, stats, questions, answers, allStats, settings,
     userBadges, allBadges: allBadges || [], allUserBadges: allUserBadges || [],
     cardTemplateUrl, streakLogoUrl, userName,
   };
 
-  const tabIndex = TAB_ORDER.indexOf(activeTab);
-
   return (
     <div className="h-full flex flex-col bg-background">
-      <NewBadgeModal
-        badge={newBadgeNotif}
-        userName={userName}
-        cardTemplateUrl={cardTemplateUrl}
-        onClose={() => setNewBadgeNotif(null)}
-      />
+      <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
 
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-5 flex-shrink-0"
-        style={{
-          background: 'hsl(var(--primary))',
-          paddingTop: 'max(env(safe-area-inset-top), 20px)',
-          paddingBottom: '18px',
-          borderRadius: '0 0 28px 28px',
-        }}
-      >
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <button
-              aria-label="لوحة الإدارة"
-              onClick={() => { playTap(); setShowAdmin(true); }}
-              className="p-2 rounded-full hover:bg-white/10 tap-scale"
-            >
-              <Settings className="w-5 h-5 text-white" />
+      {/* Header — hidden on admin routes */}
+      {!isAdminRoute && (
+        <div
+          className="flex items-center justify-between px-5 flex-shrink-0"
+          style={{ background: 'hsl(var(--primary))', paddingTop: 'max(env(safe-area-inset-top), 20px)', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
+        >
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button aria-label="لوحة الإدارة" onClick={() => { playTap(); navigate('/admin'); }}
+                className="p-2 rounded-full hover:bg-white/10 tap-scale">
+                <Settings className="w-5 h-5 text-white" />
+              </button>
+            )}
+            <div>
+              <p className="text-white/70 text-xs">يا هلا ومرحبا،</p>
+              <p className="text-white text-xl font-black">{displayName} 👋</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {refreshing && (
+              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}>
+                <RefreshCw className="w-4 h-4 text-white/70" />
+              </motion.div>
+            )}
+            <button aria-label={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
+              onClick={() => { playTap(); toggleTheme(); }} className="p-2 rounded-full hover:bg-white/10 tap-scale">
+              {theme === 'dark' ? <Sun className="w-5 h-5 text-white" /> : <Moon className="w-5 h-5 text-white" />}
             </button>
-          )}
-          <div>
-            <p className="text-white/70 text-xs">يا هلا ومرحبا،</p>
-            <p className="text-white text-xl font-black">{displayName} 👋</p>
+            <button aria-label="تسجيل الخروج"
+              onClick={() => {
+                playTap();
+                if (user) base44.entities.ActivityLog.create({ user_email: user.email, user_name: stats?.user_name || user?.full_name || '', action: 'logout', details: 'غادر التطبيق', timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }) }).catch(() => {});
+                base44.auth.logout();
+              }}
+              className="p-2 rounded-full hover:bg-white/10 tap-scale">
+              <LogOut className="w-5 h-5 text-white" />
+            </button>
           </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          {refreshing && (
-            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}>
-              <RefreshCw className="w-4 h-4 text-white/70" />
-            </motion.div>
-          )}
-          <button
-            aria-label={theme === 'dark' ? 'تفعيل الوضع الفاتح' : 'تفعيل الوضع الداكن'}
-            onClick={() => { playTap(); toggleTheme(); }}
-            className="p-2 rounded-full hover:bg-white/10 tap-scale"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-white" /> : <Moon className="w-5 h-5 text-white" />}
-          </button>
-          <button
-            aria-label="تسجيل الخروج"
-            onClick={() => {
-              playTap();
-              if (user) {
-                base44.entities.ActivityLog.create({
-                  user_email: user.email,
-                  user_name: stats?.user_name || user?.full_name || '',
-                  action: 'logout',
-                  details: 'غادر التطبيق',
-                  timestamp: new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }),
-                }).catch(() => {});
-              }
-              base44.auth.logout();
-            }}
-            className="p-2 rounded-full hover:bg-white/10 tap-scale"
-          >
-            <LogOut className="w-5 h-5 text-white" />
-          </button>
-        </div>
-      </div>
+      {/* Routes */}
+      <Routes>
+        {/* Admin routes */}
+        <Route path="/admin/*" element={
+          <div className="flex-1 overflow-y-auto" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
+            <AdminDashboard />
+          </div>
+        } />
 
-      {/* Animated Tab Content */}
-      <div className="flex-1 overflow-hidden relative">
-        <AnimatePresence mode="popLayout" custom={tabIndex} initial={false}>
-          <motion.div
-            key={activeTab}
-            custom={tabIndex}
-            variants={pageVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={pageTransition}
-            className="absolute inset-0"
-          >
-            {activeTab === 'home' && (
-              <PullToRefresh onRefresh={handleRefresh}>
-                <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
-                  <HomePage
-                    {...sharedProps}
-                    updateUserName={updateUserName}
-                    fetchAllStats={fetchAllStats}
-                  />
-                </div>
-              </PullToRefresh>
-            )}
-            {activeTab === 'challenge' && (
-              <PullToRefresh onRefresh={handleRefresh}>
-                <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
-                  <ChallengePage
-                    {...sharedProps}
-                    setStats={setStats}
-                    setAnswers={setAnswers}
-                    refreshStats={refreshStats}
-                  />
-                </div>
-              </PullToRefresh>
-            )}
-            {activeTab === 'profile' && (
-              <div className="h-full overflow-y-auto px-4 pt-4" style={{ paddingBottom: 100 }}>
-                <ProfilePage
-                  {...sharedProps}
-                  updateUserName={updateUserName}
-                  fetchAllStats={fetchAllStats}
-                  settings={settings}
-                />
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+        {/* Tab routes — all kept mounted inside TabShell */}
+        <Route path="/*" element={
+          <TabShell
+            sharedProps={sharedProps}
+            handleRefresh={handleRefresh}
+            updateUserName={updateUserName}
+            fetchAllStats={fetchAllStats}
+            setStats={setStats}
+            setAnswers={setAnswers}
+            refreshStats={refreshStats}
+            settings={settings}
+          />
+        } />
+      </Routes>
     </div>
   );
 }

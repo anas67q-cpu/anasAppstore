@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, Save } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
-export default function CompetitionInfoManager({ onBack }) {
+export default function CompetitionInfoManager() {
+  const navigate = useNavigate();
   const [description, setDescription] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [settingId, setSettingId] = useState(null);
@@ -47,7 +49,7 @@ export default function CompetitionInfoManager({ onBack }) {
   return (
     <div className="px-4 py-4 space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <h2 className="text-lg font-bold text-foreground">معلومات المسابقة</h2>

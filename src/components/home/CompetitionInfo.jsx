@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 
@@ -21,8 +22,21 @@ const ASMAA_STATS = {
   accuracy: 82,
 };
 
+const CHAMPIONS = [
+  { ...MUATH_STATS, category: 'فئة المتسابقين', icon: '🏆', color: '#f59e0b', detail: `بطل لـ ${MUATH_STATS.seasons}` },
+  { ...ASMAA_STATS, category: 'فئة الضيوف', icon: '🥇', color: '#046B67', detail: `بطلة ${ASMAA_STATS.seasons}` },
+];
+
 export default function CompetitionInfo({ settings = [] }) {
-  const [selectedChampion, setSelectedChampion] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const championId = searchParams.get('champion');
+  const selectedChampion = championId !== null ? CHAMPIONS[Number(championId)] || null : null;
+
+  const openChampion = (c) => {
+    const idx = CHAMPIONS.findIndex(x => x.name === c.name);
+    setSearchParams(p => { p.set('champion', idx); return p; });
+  };
+  const closeChampion = () => setSearchParams(p => { p.delete('champion'); return p; });
 
   const settingsObj = {};
   settings.forEach(s => { if (s.key) settingsObj[s.key] = s; });
@@ -30,11 +44,7 @@ export default function CompetitionInfo({ settings = [] }) {
   const description = infoSettings.competition_description ||
     'مسابقة أنس هي مسابقة ثقافية تنافسية تُقام سنويًا، وقد وصلت الآن إلى نسختها التاسعة المميزة. تتضمن أسئلة يومية متنوعة لمدة ٢٩ يومًا مع جوائز ومكافآت.';
   const logoUrl = infoSettings.competition_logo;
-
-  const champions = [
-    { ...MUATH_STATS, category: 'فئة المتسابقين', icon: '🏆', color: '#f59e0b', detail: `بطل لـ ${MUATH_STATS.seasons}` },
-    { ...ASMAA_STATS, category: 'فئة الضيوف', icon: '🥇', color: '#046B67', detail: `بطلة ${ASMAA_STATS.seasons}` },
-  ];
+  const champions = CHAMPIONS;
 
   return (
     <>
@@ -71,7 +81,7 @@ export default function CompetitionInfo({ settings = [] }) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
-                onClick={() => { playTap(); setSelectedChampion(c); }}
+                onClick={() => { playTap(); openChampion(c); }}
                 className="w-full flex items-center gap-3 p-3.5 rounded-xl bg-secondary tap-scale text-right"
               >
                 <span className="text-2xl">{c.icon}</span>
@@ -89,7 +99,7 @@ export default function CompetitionInfo({ settings = [] }) {
         </div>
       </motion.div>
 
-      <BottomSheet open={!!selectedChampion} onClose={() => setSelectedChampion(null)}
+      <BottomSheet open={!!selectedChampion} onClose={closeChampion}
         title={selectedChampion?.name}>
         {selectedChampion && <ChampionDetail champion={selectedChampion} />}
       </BottomSheet>

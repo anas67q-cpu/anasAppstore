@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
@@ -15,7 +16,7 @@ import { playTap } from '@/lib/sounds';
 
 const SECTIONS = [
   { id: 'questions', label: 'إدارة الأسئلة', sub: 'أضف وعدّل أسئلة المسابقة', icon: FileQuestion, color: '#046B67' },
-  { id: 'essay', label: 'تصحيح المقالية', sub: 'تصحيح إجابات المتسابقين', icon: BookOpen, color: '#8b5cf6' },
+  { id: 'essay', label: 'تصحيح المقالية', sub: 'تصحيح إجابات المشتركين', icon: BookOpen, color: '#8b5cf6' },
   { id: 'answers', label: 'إجابات المشتركين', sub: 'عرض جميع الإجابات والأوقات', icon: ClipboardList, color: '#0ea5e9' },
   { id: 'activity', label: 'نشاط المشتركين', sub: 'سجل الدخول والخروج والإجابات', icon: Activity, color: '#10b981' },
   { id: 'complaints', label: 'الشكاوى والاستفسارات', sub: 'الرد على استفسارات المشتركين', icon: MessageSquare, color: '#f59e0b' },
@@ -25,8 +26,8 @@ const SECTIONS = [
   { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#0ea5e9' },
 ];
 
-export default function AdminDashboard({ onBack }) {
-  const [section, setSection] = useState(null);
+function AdminHome() {
+  const navigate = useNavigate();
   const [leaderboardHidden, setLeaderboardHidden] = useState(false);
   const [settingRecord, setSettingRecord] = useState(null);
   const [toggling, setToggling] = useState(false);
@@ -34,10 +35,7 @@ export default function AdminDashboard({ onBack }) {
   useEffect(() => {
     base44.entities.AppSettings.list().then(list => {
       const rec = list.find(s => s.key === 'images') || list[0];
-      if (rec) {
-        setSettingRecord(rec);
-        setLeaderboardHidden(!!rec.leaderboard_hidden);
-      }
+      if (rec) { setSettingRecord(rec); setLeaderboardHidden(!!rec.leaderboard_hidden); }
     });
   }, []);
 
@@ -47,29 +45,19 @@ export default function AdminDashboard({ onBack }) {
     const newVal = !leaderboardHidden;
     if (settingRecord) {
       await base44.entities.AppSettings.update(settingRecord.id, { leaderboard_hidden: newVal });
-      setLeaderboardHidden(newVal);
+      setSettingRecord(s => ({ ...s, leaderboard_hidden: newVal }));
     } else {
       const created = await base44.entities.AppSettings.create({ key: 'leaderboard_control', leaderboard_hidden: newVal });
       setSettingRecord(created);
-      setLeaderboardHidden(newVal);
     }
+    setLeaderboardHidden(newVal);
     setToggling(false);
   };
-
-  if (section === 'questions') return <QuestionManager onBack={() => setSection(null)} />;
-  if (section === 'essay') return <EssayReview onBack={() => setSection(null)} />;
-  if (section === 'answers') return <AnswerViewer onBack={() => setSection(null)} />;
-  if (section === 'activity') return <ActivityLogViewer onBack={() => setSection(null)} />;
-  if (section === 'complaints') return <ComplaintsManager onBack={() => setSection(null)} />;
-  if (section === 'users') return <UserManager onBack={() => setSection(null)} />;
-  if (section === 'images') return <ImageManager onBack={() => setSection(null)} />;
-  if (section === 'badges') return <BadgeManager onBack={() => setSection(null)} />;
-  if (section === 'info') return <CompetitionInfoManager onBack={() => setSection(null)} />;
 
   return (
     <div className="px-4 py-4 space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
+        <button onClick={() => navigate('/home')} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div>
@@ -79,23 +67,14 @@ export default function AdminDashboard({ onBack }) {
       </div>
 
       {/* Leaderboard toggle */}
-      <motion.button
-        whileTap={{ scale: 0.97 }}
-        onClick={toggleLeaderboard}
-        disabled={toggling}
+      <motion.button whileTap={{ scale: 0.97 }} onClick={toggleLeaderboard} disabled={toggling}
         className="w-full p-4 rounded-2xl flex items-center gap-4 tap-scale relative overflow-hidden"
-        style={{
-          background: leaderboardHidden ? '#ef444415' : '#046B6715',
-          border: `2px solid ${leaderboardHidden ? '#ef444440' : '#046B6740'}`,
-        }}
-      >
+        style={{ background: leaderboardHidden ? '#ef444415' : '#046B6715', border: `2px solid ${leaderboardHidden ? '#ef444440' : '#046B6740'}` }}>
         <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ background: leaderboardHidden ? '#ef444420' : '#046B6720' }}>
           {toggling
             ? <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: leaderboardHidden ? '#ef4444' : '#046B67', borderTopColor: 'transparent' }} />
-            : leaderboardHidden
-              ? <Lock className="w-6 h-6" style={{ color: '#ef4444' }} />
-              : <Unlock className="w-6 h-6" style={{ color: '#046B67' }} />
+            : leaderboardHidden ? <Lock className="w-6 h-6" style={{ color: '#ef4444' }} /> : <Unlock className="w-6 h-6" style={{ color: '#046B67' }} />
           }
         </div>
         <div className="flex-1 text-right">
@@ -106,18 +85,10 @@ export default function AdminDashboard({ onBack }) {
             {leaderboardHidden ? 'اضغط لإعادة إظهارها لدى الجميع' : 'اضغط لإغلاقها وزيادة الإثارة!'}
           </p>
         </div>
-        {/* Animated lock overlay */}
         <AnimatePresence>
           {leaderboardHidden && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              className="absolute left-4 top-1/2 -translate-y-1/2"
-            >
-              <motion.div animate={{ rotate: [0, -5, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}>
-                🔒
-              </motion.div>
+            <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="absolute left-4 top-1/2 -translate-y-1/2">
+              <motion.div animate={{ rotate: [0, -5, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 2 }}>🔒</motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -127,16 +98,10 @@ export default function AdminDashboard({ onBack }) {
         {SECTIONS.map((sec, i) => {
           const Icon = sec.icon;
           return (
-            <motion.button
-              key={sec.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              onClick={() => setSection(sec.id)}
-              className="card-surface shadow-card p-4 flex items-center gap-4 tap-scale text-right w-full"
-            >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: sec.color + '20' }}>
+            <motion.button key={sec.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              onClick={() => { playTap(); navigate(`/admin/${sec.id}`); }}
+              className="card-surface shadow-card p-4 flex items-center gap-4 tap-scale text-right w-full">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: sec.color + '20' }}>
                 <Icon className="w-6 h-6" style={{ color: sec.color }} />
               </div>
               <div className="flex-1">
@@ -149,5 +114,23 @@ export default function AdminDashboard({ onBack }) {
         })}
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Routes>
+      <Route path="/" element={<AdminHome />} />
+      <Route path="/questions" element={<QuestionManager />} />
+      <Route path="/essay" element={<EssayReview />} />
+      <Route path="/answers" element={<AnswerViewer />} />
+      <Route path="/activity" element={<ActivityLogViewer />} />
+      <Route path="/complaints" element={<ComplaintsManager />} />
+      <Route path="/users" element={<UserManager />} />
+      <Route path="/badges" element={<BadgeManager />} />
+      <Route path="/images" element={<ImageManager />} />
+      <Route path="/info" element={<CompetitionInfoManager />} />
+      <Route path="*" element={<Navigate to="/admin" replace />} />
+    </Routes>
   );
 }

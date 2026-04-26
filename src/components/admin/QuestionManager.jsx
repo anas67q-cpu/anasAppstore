@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
 import QuestionForm from '@/components/admin/QuestionForm';
 
-export default function QuestionManager({ onBack }) {
+export default function QuestionManager() {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -37,14 +39,14 @@ export default function QuestionManager({ onBack }) {
       <div className="px-4 py-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h2 className="text-lg font-bold text-foreground">الأسئلة ({questions.length})</h2>
           </div>
           <button onClick={() => { setEditing(null); setShowForm(true); }}
-            className="p-2.5 rounded-xl text-white tap-scale"
-            style={{ background: 'hsl(var(--primary))' }}>
+            className="p-2.5 rounded-xl text-white tap-scale" style={{ background: 'hsl(var(--primary))' }}
+            aria-label="إضافة سؤال">
             <Plus className="w-5 h-5" />
           </button>
         </div>
@@ -67,21 +69,25 @@ export default function QuestionManager({ onBack }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground leading-relaxed line-clamp-2">{q.text}</p>
-                    {q.publish_date && (
-                      <p className="text-[10px] text-muted-foreground mt-1">{q.publish_date}</p>
+                    {q.image_url && <p className="text-[10px] text-primary mt-0.5">📷 تحتوي صورة</p>}
+                    {q.target_audience && q.target_audience !== 'all' && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        🎯 {q.target_audience === 'contestants' ? 'للمتسابقين' : q.target_audience === 'guests' ? 'للضيوف' : 'لأشخاص محددين'}
+                      </p>
                     )}
+                    {q.publish_date && <p className="text-[10px] text-muted-foreground mt-1">{q.publish_date}</p>}
                   </div>
                   <div className="flex flex-col items-center gap-2">
-                    <button onClick={() => togglePublish(q)} className="p-1.5 rounded-lg bg-secondary tap-scale">
+                    <button onClick={() => togglePublish(q)} className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label={q.is_published ? 'إخفاء' : 'نشر'}>
                       {q.is_published
                         ? <Eye className="w-4 h-4" style={{ color: 'hsl(var(--primary))' }} />
                         : <EyeOff className="w-4 h-4 text-muted-foreground" />}
                     </button>
                     <button onClick={() => { setEditing(q); setShowForm(true); }}
-                      className="p-1.5 rounded-lg bg-secondary tap-scale">
+                      className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="تعديل">
                       <Pencil className="w-4 h-4 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDelete(q.id)} className="p-1.5 rounded-lg bg-secondary tap-scale">
+                    <button onClick={() => handleDelete(q.id)} className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="حذف">
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </button>
                   </div>

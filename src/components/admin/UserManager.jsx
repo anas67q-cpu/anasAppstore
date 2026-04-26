@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Search, Pencil, Users, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
 import NativeSelect from '@/components/ui/NativeSelect';
@@ -14,7 +15,8 @@ const CATEGORY_OPTIONS = [
 const CATEGORY_LABELS = { guest: 'ضيف', contestant: 'متسابق' };
 const CATEGORY_COLORS = { guest: '#6366f1', contestant: '#f59e0b' };
 
-export default function UserManager({ onBack }) {
+export default function UserManager() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -124,7 +126,7 @@ export default function UserManager({ onBack }) {
     <>
       <div className="px-4 py-4 space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <h2 className="text-lg font-bold text-foreground">المشتركون ({stats.length})</h2>

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Trash2, Award, Upload, Search, Tag, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
+import NativeSelect from '@/components/ui/NativeSelect';
 import { playTap } from '@/lib/sounds';
 
-export default function BadgeManager({ onBack }) {
+export default function BadgeManager() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState('catalog'); // 'catalog' | 'assign'
   const [badges, setBadges] = useState([]);
   const [userBadges, setUserBadges] = useState([]);
@@ -48,7 +51,7 @@ export default function BadgeManager({ onBack }) {
       <div className="px-4 py-4 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+            <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
             <h2 className="text-lg font-bold text-foreground">إدارة الشارات</h2>
@@ -247,17 +250,21 @@ function AssignBadgeForm({ badges, users, onSaved }) {
     <div className="space-y-4">
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">الشارة</label>
-        <select value={selectedBadge} onChange={e => setSelectedBadge(e.target.value)} className={ic}>
-          <option value="">اختر شارة...</option>
-          {badges.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        <NativeSelect
+          value={selectedBadge}
+          onChange={setSelectedBadge}
+          options={[{ value: '', label: 'اختر شارة...' }, ...badges.map(b => ({ value: b.id, label: b.name }))]}
+          label="الشارة"
+        />
       </div>
       <div>
         <label className="text-xs text-muted-foreground mb-1 block">المشترك</label>
-        <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className={ic}>
-          <option value="">اختر مشترك...</option>
-          {users.map(u => <option key={u.id} value={u.user_email}>{u.user_name || u.user_email}</option>)}
-        </select>
+        <NativeSelect
+          value={selectedUser}
+          onChange={setSelectedUser}
+          options={[{ value: '', label: 'اختر مشترك...' }, ...users.map(u => ({ value: u.user_email, label: u.user_name || u.user_email }))]}
+          label="المشترك"
+        />
       </div>
       <button onClick={handleSave} disabled={saving || !selectedUser || !selectedBadge}
         className="w-full py-3.5 rounded-xl text-white font-bold disabled:opacity-50 tap-scale"

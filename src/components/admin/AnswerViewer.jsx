@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ChevronDown, CheckCircle2, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 function formatTime(seconds) {
@@ -14,7 +15,8 @@ function formatDate(dateStr) {
   return d.toLocaleString('ar-SA', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
 
-export default function AnswerViewer({ onBack }) {
+export default function AnswerViewer() {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +46,7 @@ export default function AnswerViewer({ onBack }) {
   return (
     <div className="px-4 py-4 space-y-4">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <h2 className="text-lg font-bold text-foreground">إجابات المتسابقين</h2>

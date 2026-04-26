@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
 const ACTION_MAP = {
@@ -20,7 +21,8 @@ function formatDate(dateStr) {
   });
 }
 
-export default function ActivityLogViewer({ onBack }) {
+export default function ActivityLogViewer() {
+  const navigate = useNavigate();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +39,7 @@ export default function ActivityLogViewer({ onBack }) {
     <div className="px-4 py-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
           <h2 className="text-lg font-bold text-foreground">نشاط المتسابقين</h2>
