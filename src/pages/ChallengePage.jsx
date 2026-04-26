@@ -1,9 +1,22 @@
 import DailyQuestion from '@/components/challenge/DailyQuestion';
 
 export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats }) {
+  const userCategory = stats?.category || 'guest';
+  const userEmail = user?.email || '';
+
+  // Filter questions visible to this user based on target_audience
+  const visibleQs = (questions || []).filter(q => {
+    if (!q.is_published) return false;
+    const ta = q.target_audience || 'all';
+    if (ta === 'all') return true;
+    if (ta === 'contestants') return userCategory === 'contestant';
+    if (ta === 'guests') return userCategory === 'guest';
+    if (ta === 'specific') return (q.target_emails || []).includes(userEmail);
+    return true;
+  });
+
   // All published questions sorted by day_number
-  const publishedQs = (questions || [])
-    .filter(q => q.is_published)
+  const publishedQs = visibleQs
     .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
 
   return (

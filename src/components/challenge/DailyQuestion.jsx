@@ -273,7 +273,15 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
         </div>
 
         {/* Question */}
-        <div className="card-surface shadow-card p-5">
+        <div className="card-surface shadow-card p-5 space-y-3">
+          {todayQ?.image_url && (
+            <img
+              src={todayQ.image_url}
+              alt="صورة السؤال"
+              className="w-full rounded-xl object-contain max-h-56"
+              style={{ background: 'hsl(var(--secondary))' }}
+            />
+          )}
           <p className="text-base font-bold leading-relaxed text-foreground">{todayQ?.text}</p>
         </div>
 

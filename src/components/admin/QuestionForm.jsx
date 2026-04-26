@@ -2,11 +2,19 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 import NativeSelect from '@/components/ui/NativeSelect';
+import { ImagePlus, X, Loader2 } from 'lucide-react';
 
 const TYPE_OPTIONS = [
   { value: 'multiple_choice', label: 'اختيار من متعدد' },
   { value: 'true_false', label: 'صح أو خطأ' },
   { value: 'essay', label: 'مقالي' },
+];
+
+const AUDIENCE_OPTIONS = [
+  { value: 'all', label: 'الجميع 👥' },
+  { value: 'contestants', label: 'المتسابقون فقط 🏆' },
+  { value: 'guests', label: 'الضيوف فقط 👤' },
+  { value: 'specific', label: 'أشخاص محددون ✉️' },
 ];
 
 export default function QuestionForm({ question, onSaved }) {
@@ -24,6 +32,10 @@ export default function QuestionForm({ question, onSaved }) {
   const [dayNumber, setDayNumber] = useState(question?.day_number || 1);
   const [timeLimit, setTimeLimit] = useState(question?.time_limit || 90);
   const [saving, setSaving] = useState(false);
+  const [imageUrl, setImageUrl] = useState(question?.image_url || '');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [targetAudience, setTargetAudience] = useState(question?.target_audience || 'all');
+  const [targetEmails, setTargetEmails] = useState((question?.target_emails || []).join('\n'));
 
   const suggestedPoints = dayNumber <= 10 ? 1 : dayNumber <= 20 ? 2 : 3;
   const [points, setPoints] = useState(question?.points || suggestedPoints);
@@ -37,10 +49,22 @@ export default function QuestionForm({ question, onSaved }) {
     return correctAnswer;
   };
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setImageUrl(file_url);
+    setUploadingImage(false);
+  };
+
   const handleSave = async () => {
     setSaving(true);
     playTap();
     const finalCorrect = getFinalCorrectAnswer();
+    const emailList = targetAudience === 'specific'
+      ? targetEmails.split('\n').map(e => e.trim()).filter(Boolean)
+      : [];
     const data = {
       text, type,
       options: type === 'multiple_choice' ? options.filter(o => o.trim()) : [],
@@ -48,6 +72,9 @@ export default function QuestionForm({ question, onSaved }) {
       day_number: Number(dayNumber),
       time_limit: Number(timeLimit),
       points: Number(points),
+      image_url: imageUrl || '',
+      target_audience: targetAudience,
+      target_emails: emailList,
     };
     if (question) {
       await base44.entities.Question.update(question.id, data);
@@ -67,15 +94,37 @@ export default function QuestionForm({ question, onSaved }) {
         <textarea value={text} onChange={e => setText(e.target.value)} className={`${inputClass} min-h-[80px] resize-none`} />
       </div>
 
+      {/* Image upload */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">صورة للسؤال (اختياري)</label>
+        {imageUrl ? (
+          <div className="relative">
+            <img src={imageUrl} alt="صورة السؤال" className="w-full rounded-2xl object-cover max-h-48" />
+            <button
+              type="button"
+              onClick={() => setImageUrl('')}
+              aria-label="حذف الصورة"
+              className="absolute top-2 left-2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center tap-scale"
+            >
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-2xl border-2 border-dashed border-border cursor-pointer tap-scale hover:border-primary transition-colors">
+            {uploadingImage
+              ? <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              : <ImagePlus className="w-6 h-6 text-muted-foreground" />
+            }
+            <span className="text-sm text-muted-foreground">{uploadingImage ? 'جاري الرفع...' : 'اضغط لرفع صورة'}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploadingImage} />
+          </label>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">النوع</label>
-          <NativeSelect
-            value={type}
-            onChange={setType}
-            options={TYPE_OPTIONS}
-            label="نوع السؤال"
-          />
+          <NativeSelect value={type} onChange={setType} options={TYPE_OPTIONS} label="نوع السؤال" />
         </div>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">اليوم</label>
@@ -88,6 +137,24 @@ export default function QuestionForm({ question, onSaved }) {
             min={1} max={29} className={inputClass} />
         </div>
       </div>
+
+      {/* Target audience */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">يظهر لـ</label>
+        <NativeSelect value={targetAudience} onChange={setTargetAudience} options={AUDIENCE_OPTIONS} label="الجمهور المستهدف" />
+      </div>
+      {targetAudience === 'specific' && (
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">البريد الإلكتروني (سطر لكل شخص)</label>
+          <textarea
+            value={targetEmails}
+            onChange={e => setTargetEmails(e.target.value)}
+            placeholder={"user1@example.com\nuser2@example.com"}
+            className={`${inputClass} min-h-[80px] resize-none`}
+            dir="ltr"
+          />
+        </div>
+      )}
 
       {type === 'multiple_choice' && (
         <div>
@@ -150,7 +217,7 @@ export default function QuestionForm({ question, onSaved }) {
 
       <button
         onClick={handleSave}
-        disabled={saving || !text.trim()}
+        disabled={saving || !text.trim() || uploadingImage}
         className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold tap-scale disabled:opacity-50"
       >
         {saving ? 'جاري الحفظ...' : (question ? 'تحديث' : 'إنشاء')}

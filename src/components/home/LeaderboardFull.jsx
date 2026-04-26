@@ -1,26 +1,99 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { Lock } from 'lucide-react';
 
 const medals = ['🥇', '🥈', '🥉'];
 
-export default function LeaderboardFull({ allStats = [], settings = [] }) {
+export default function LeaderboardFull({ allStats = [], settings = [], currentUserCategory = 'guest' }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [activeTab, setActiveTab] = useState('contestants');
 
   const shieldSetting = settings.find(s => s.leaderboard_shield);
   const shieldUrl = shieldSetting?.leaderboard_shield;
 
+  const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
+  const isHidden = hiddenSetting?.leaderboard_hidden === true;
+
+  const contestants = allStats.filter(s => s.category === 'contestant');
+  const guests = allStats.filter(s => s.category !== 'contestant');
+
+  const displayList = activeTab === 'contestants' ? contestants : guests;
+
+  if (isHidden) {
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-12 gap-5"
+        >
+          <motion.div
+            animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+            className="text-8xl select-none"
+          >
+            🔒
+          </motion.div>
+          <div className="text-center space-y-2">
+            <p className="text-xl font-black text-foreground">لوحة الصدارة مغلقة!</p>
+            <p className="text-sm text-muted-foreground px-6 text-center leading-relaxed">
+              تم إغلاق لوحة الصدارة مؤقتاً لزيادة الإثارة والحماس في هذه المرحلة 🎯
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center">
+            {['🏆', '🥇', '🎯', '⚡', '🔥'].map((emoji, i) => (
+              <motion.span
+                key={i}
+                animate={{ y: [0, -8, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2, ease: 'easeInOut' }}
+                className="text-2xl"
+              >
+                {emoji}
+              </motion.span>
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
   return (
     <>
+      {shieldUrl && (
+        <div className="flex justify-center mb-4">
+          <img src={shieldUrl} alt="shield" className="w-24 h-24 object-contain" />
+        </div>
+      )}
+
+      {/* Category Tabs */}
+      <div className="flex gap-2 mb-4 p-1 rounded-2xl bg-secondary">
+        {[
+          { id: 'contestants', label: `المتسابقون 🏆 (${contestants.length})` },
+          { id: 'guests', label: `الضيوف 👤 (${guests.length})` },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => { playTap(); setActiveTab(tab.id); }}
+            className="flex-1 py-2 rounded-xl text-xs font-bold transition-all tap-scale"
+            style={{
+              background: activeTab === tab.id ? 'hsl(var(--card))' : 'transparent',
+              color: activeTab === tab.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+              boxShadow: activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.12)' : 'none',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-        {shieldUrl && (
-          <div className="flex justify-center mb-4">
-            <img src={shieldUrl} alt="shield" className="w-24 h-24 object-contain" />
-          </div>
+        {displayList.length === 0 && (
+          <p className="text-center text-sm text-muted-foreground py-8">لا يوجد أحد في هذه الفئة بعد</p>
         )}
-        {allStats.map((s, i) => (
+        {displayList.map((s, i) => (
           <motion.button
             key={s.id}
             initial={{ opacity: 0, x: 20 }}
@@ -70,9 +143,7 @@ function PlayerDetail({ player }) {
           <BarChart data={chartData}>
             <XAxis dataKey="name" tick={{ fill: 'hsl(0,0%,55%)', fontSize: 12 }} axisLine={false} tickLine={false} />
             <YAxis hide />
-            <Tooltip
-              contentStyle={{ background: 'hsl(0,0%,9%)', border: 'none', borderRadius: 12, color: '#fff' }}
-            />
+            <Tooltip contentStyle={{ background: 'hsl(0,0%,9%)', border: 'none', borderRadius: 12, color: '#fff' }} />
             <Bar dataKey="value" fill="hsl(174,93%,22%)" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

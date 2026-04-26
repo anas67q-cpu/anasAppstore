@@ -10,6 +10,15 @@
       "type": "string",
       "description": "Display name"
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "contestant"
+      ],
+      "default": "guest",
+      "description": "\u0627\u0644\u0645\u062a\u0633\u0627\u0628\u0642 \u064a\u0643\u0648\u0646 contestant\u060c \u0627\u0644\u0636\u064a\u0641 \u064a\u0643\u0648\u0646 guest"
+    },
     "total_correct": {
       "type": "number",
       "default": 0
@@ -55,8 +64,7 @@
     },
     "consecutive_days_from_start": {
       "type": "number",
-      "default": 0,
-      "description": "First 15 consecutive days count"
+      "default": 0
     }
   },
   "required": [

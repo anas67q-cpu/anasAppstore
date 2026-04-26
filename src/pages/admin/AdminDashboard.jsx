@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
 import ImageManager from '@/components/admin/ImageManager';
@@ -10,14 +10,16 @@ import CompetitionInfoManager from '@/components/admin/CompetitionInfoManager';
 import ComplaintsManager from '@/components/admin/ComplaintsManager';
 import AnswerViewer from '@/components/admin/AnswerViewer';
 import ActivityLogViewer from '@/components/admin/ActivityLogViewer';
+import { base44 } from '@/api/base44Client';
+import { playTap } from '@/lib/sounds';
 
 const SECTIONS = [
   { id: 'questions', label: 'إدارة الأسئلة', sub: 'أضف وعدّل أسئلة المسابقة', icon: FileQuestion, color: '#046B67' },
   { id: 'essay', label: 'تصحيح المقالية', sub: 'تصحيح إجابات المتسابقين', icon: BookOpen, color: '#8b5cf6' },
-  { id: 'answers', label: 'إجابات المتسابقين', sub: 'عرض جميع الإجابات والأوقات', icon: ClipboardList, color: '#0ea5e9' },
-  { id: 'activity', label: 'نشاط المتسابقين', sub: 'سجل الدخول والخروج والإجابات', icon: Activity, color: '#10b981' },
-  { id: 'complaints', label: 'الشكاوى والاستفسارات', sub: 'الرد على استفسارات المتسابقين', icon: MessageSquare, color: '#f59e0b' },
-  { id: 'users', label: 'إدارة المشتركين', sub: 'عرض وتعديل بيانات المشتركين', icon: Users, color: '#6366f1' },
+  { id: 'answers', label: 'إجابات المشتركين', sub: 'عرض جميع الإجابات والأوقات', icon: ClipboardList, color: '#0ea5e9' },
+  { id: 'activity', label: 'نشاط المشتركين', sub: 'سجل الدخول والخروج والإجابات', icon: Activity, color: '#10b981' },
+  { id: 'complaints', label: 'الشكاوى والاستفسارات', sub: 'الرد على استفسارات المشتركين', icon: MessageSquare, color: '#f59e0b' },
+  { id: 'users', label: 'إدارة المشتركين', sub: 'تحديد فئة كل مشترك (ضيف/متسابق)', icon: Users, color: '#6366f1' },
   { id: 'badges', label: 'إدارة الشارات', sub: 'إنشاء ومنح شارات المشتركين', icon: Award, color: '#f59e0b' },
   { id: 'images', label: 'الصور والأصول', sub: 'رفع صور التطبيق وقوالب البطاقات', icon: Image, color: '#ec4899' },
   { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#0ea5e9' },
@@ -25,6 +27,34 @@ const SECTIONS = [
 
 export default function AdminDashboard({ onBack }) {
   const [section, setSection] = useState(null);
+  const [leaderboardHidden, setLeaderboardHidden] = useState(false);
+  const [settingRecord, setSettingRecord] = useState(null);
+  const [toggling, setToggling] = useState(false);
+
+  useEffect(() => {
+    base44.entities.AppSettings.list().then(list => {
+      const rec = list.find(s => s.key === 'images') || list[0];
+      if (rec) {
+        setSettingRecord(rec);
+        setLeaderboardHidden(!!rec.leaderboard_hidden);
+      }
+    });
+  }, []);
+
+  const toggleLeaderboard = async () => {
+    playTap();
+    setToggling(true);
+    const newVal = !leaderboardHidden;
+    if (settingRecord) {
+      await base44.entities.AppSettings.update(settingRecord.id, { leaderboard_hidden: newVal });
+      setLeaderboardHidden(newVal);
+    } else {
+      const created = await base44.entities.AppSettings.create({ key: 'leaderboard_control', leaderboard_hidden: newVal });
+      setSettingRecord(created);
+      setLeaderboardHidden(newVal);
+    }
+    setToggling(false);
+  };
 
   if (section === 'questions') return <QuestionManager onBack={() => setSection(null)} />;
   if (section === 'essay') return <EssayReview onBack={() => setSection(null)} />;
@@ -39,7 +69,7 @@ export default function AdminDashboard({ onBack }) {
   return (
     <div className="px-4 py-4 space-y-5">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale">
+        <button onClick={onBack} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div>
@@ -47,6 +77,51 @@ export default function AdminDashboard({ onBack }) {
           <p className="text-xs text-muted-foreground">إدارة المسابقة</p>
         </div>
       </div>
+
+      {/* Leaderboard toggle */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={toggleLeaderboard}
+        disabled={toggling}
+        className="w-full p-4 rounded-2xl flex items-center gap-4 tap-scale relative overflow-hidden"
+        style={{
+          background: leaderboardHidden ? '#ef444415' : '#046B6715',
+          border: `2px solid ${leaderboardHidden ? '#ef444440' : '#046B6740'}`,
+        }}
+      >
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: leaderboardHidden ? '#ef444420' : '#046B6720' }}>
+          {toggling
+            ? <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: leaderboardHidden ? '#ef4444' : '#046B67', borderTopColor: 'transparent' }} />
+            : leaderboardHidden
+              ? <Lock className="w-6 h-6" style={{ color: '#ef4444' }} />
+              : <Unlock className="w-6 h-6" style={{ color: '#046B67' }} />
+          }
+        </div>
+        <div className="flex-1 text-right">
+          <p className="font-bold" style={{ color: leaderboardHidden ? '#ef4444' : '#046B67' }}>
+            {leaderboardHidden ? '🔒 لوحة الصدارة مقفلة' : '🏆 لوحة الصدارة مفعّلة'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {leaderboardHidden ? 'اضغط لإعادة إظهارها لدى الجميع' : 'اضغط لإغلاقها وزيادة الإثارة!'}
+          </p>
+        </div>
+        {/* Animated lock overlay */}
+        <AnimatePresence>
+          {leaderboardHidden && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              className="absolute left-4 top-1/2 -translate-y-1/2"
+            >
+              <motion.div animate={{ rotate: [0, -5, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}>
+                🔒
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.button>
 
       <div className="grid grid-cols-1 gap-3">
         {SECTIONS.map((sec, i) => {
@@ -56,7 +131,7 @@ export default function AdminDashboard({ onBack }) {
               key={sec.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: i * 0.04 }}
               onClick={() => setSection(sec.id)}
               className="card-surface shadow-card p-4 flex items-center gap-4 tap-scale text-right w-full"
             >

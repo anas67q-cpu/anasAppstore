@@ -9,7 +9,7 @@ import { Trophy, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 
-export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName }) {
+export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -69,7 +69,7 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
         userName={userName}
       />
 
-      <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} />
+      <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} settings={settings} />
 
       <ComplaintsSection user={user} stats={stats} />
 

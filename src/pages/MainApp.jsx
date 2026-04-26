@@ -304,6 +304,7 @@ export default function MainApp() {
                   {...sharedProps}
                   updateUserName={updateUserName}
                   fetchAllStats={fetchAllStats}
+                  settings={settings}
                 />
               </div>
             )}

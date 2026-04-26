@@ -3,7 +3,7 @@ import WeeklyProgress from '@/components/home/WeeklyProgress';
 import CompetitionInfo from '@/components/home/CompetitionInfo';
 import BadgesStrip from '@/components/home/BadgesStrip';
 
-export default function HomePage({ user, stats, questions, answers, userBadges = [], allBadges = [], allUserBadges = [], settings = [], cardTemplateUrl, streakLogoUrl, userName }) {
+export default function HomePage({ user, stats, questions, answers, userBadges = [], allBadges = [], allUserBadges = [], settings = [], cardTemplateUrl, streakLogoUrl, userName, allStats = [] }) {
   return (
     <div className="space-y-5 pb-6">
       <StatsOverview stats={stats} />
