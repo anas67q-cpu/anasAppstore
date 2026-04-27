@@ -49,8 +49,11 @@ export default function QuestionManager() {
     // Get all users matching the target
     let allStats = await base44.entities.UserStats.list();
     let targetUsers = allStats;
-    if (targetCategory) {
-      targetUsers = allStats.filter(s => s.category === targetCategory);
+    if (ta === 'contestants') {
+      targetUsers = allStats.filter(s => s.category === 'contestant');
+    } else if (ta === 'guests') {
+      // guest is default — include users with category='guest' OR no category set
+      targetUsers = allStats.filter(s => !s.category || s.category === 'guest');
     } else if (ta === 'specific') {
       const emails = q.target_emails || [];
       targetUsers = allStats.filter(s => emails.includes(s.user_email));
