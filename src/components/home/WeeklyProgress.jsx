@@ -48,9 +48,10 @@ function getDayStatus(dateStr, questions, answers) {
     if (a?.is_correct) status = 'correct';
     else if (a && !a.graded && q.type === 'essay' && a.user_answer) status = 'future';
     else if (a && a.user_answer) status = 'wrong';
-    // admin-marked missed: answer exists but user_answer is empty
+    // admin-marked missed: answer exists but user_answer is empty (regardless of is_published)
     else if (a && a.user_answer === '' && !a.is_correct) status = 'missed';
-    else if (q.is_published) status = dateStr === today ? 'future' : 'missed';
+    else if (q.is_published && dateStr !== today) status = 'missed';
+    else if (q.is_published && dateStr === today) status = 'future';
     else status = 'future';
     return { q, a: a || null, status };
   });

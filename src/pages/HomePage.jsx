@@ -18,6 +18,14 @@ export default function HomePage({ user, stats, questions, answers, userBadges =
     return true;
   });
 
+  // For weekly progress: also include unpublished questions that the user has an answer for (admin-marked missed)
+  const answeredQuestionIds = new Set((answers || []).map(a => a.question_id));
+  const weeklyQs = (questions || []).filter(q => {
+    if (visibleQs.find(v => v.id === q.id)) return true; // already visible
+    if (answeredQuestionIds.has(q.id)) return true; // has an admin-marked missed answer
+    return false;
+  });
+
   return (
     <div className="space-y-5 pb-6">
       <StatsOverview stats={stats} />
@@ -30,7 +38,7 @@ export default function HomePage({ user, stats, questions, answers, userBadges =
           userName={userName}
         />
       )}
-      <WeeklyProgress questions={visibleQs} answers={answers} userEmail={userEmail} />
+      <WeeklyProgress questions={weeklyQs} answers={answers} userEmail={userEmail} />
       <CompetitionInfo settings={settings} />
     </div>
   );
