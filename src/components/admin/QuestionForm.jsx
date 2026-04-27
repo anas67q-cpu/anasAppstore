@@ -30,6 +30,7 @@ export default function QuestionForm({ question, onSaved }) {
     return -1;
   });
   const [dayNumber, setDayNumber] = useState(question?.day_number || 1);
+  const [publishDate, setPublishDate] = useState(question?.publish_date || '');
   const [timeLimit, setTimeLimit] = useState(question?.time_limit || 90);
   const [saving, setSaving] = useState(false);
   const [imageUrl, setImageUrl] = useState(question?.image_url || '');
@@ -73,6 +74,7 @@ export default function QuestionForm({ question, onSaved }) {
       options: type === 'multiple_choice' ? options.filter(o => o.trim()) : [],
       correct_answer: finalCorrect,
       day_number: Number(dayNumber),
+      publish_date: publishDate || '',
       time_limit: Number(timeLimit),
       points: Number(points),
       image_url: imageUrl || '',
@@ -130,7 +132,7 @@ export default function QuestionForm({ question, onSaved }) {
           <NativeSelect value={type} onChange={setType} options={TYPE_OPTIONS} label="نوع السؤال" />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">اليوم</label>
+          <label className="text-xs text-muted-foreground mb-1 block">رقم اليوم</label>
           <input type="number" value={dayNumber}
             onChange={e => {
               const d = Number(e.target.value);
@@ -139,6 +141,19 @@ export default function QuestionForm({ question, onSaved }) {
             }}
             min={1} max={29} className={inputClass} />
         </div>
+      </div>
+
+      {/* Publish date — used for weekly progress display */}
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">تاريخ السؤال (للتقدم الأسبوعي)</label>
+        <input
+          type="date"
+          value={publishDate}
+          onChange={e => setPublishDate(e.target.value)}
+          className={inputClass}
+          dir="ltr"
+        />
+        <p className="text-[10px] text-muted-foreground mt-0.5">يحدد في أي يوم يظهر السؤال في التقدم الأسبوعي</p>
       </div>
 
       {/* Target audience */}
