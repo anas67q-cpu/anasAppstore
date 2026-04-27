@@ -152,7 +152,7 @@ export default function WeeklyProgress({ questions = [], answers = [], userEmail
           {[
             { color: '#046B67', label: 'صحيح' },
             { color: '#ef4444', label: 'خاطئ' },
-            { color: '#f59e0b', label: 'فاتتك' },
+            { color: '#f59e0b', label: 'فاتك' },
             { color: '#94a3b8', label: 'قادم' },
           ].map(l => (
             <div key={l.label} className="flex items-center gap-1">

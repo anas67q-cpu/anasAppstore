@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
@@ -33,6 +33,58 @@ export default function QuestionManager() {
   };
 
   const typeMap = { multiple_choice: 'م.م', true_false: 'ص/خ', essay: 'مقالي' };
+
+  const markMissed = async (q) => {
+    if (!q.is_published || !q.publish_date) {
+      alert('السؤال يجب أن يكون منشوراً وله تاريخ نشر');
+      return;
+    }
+
+    // Determine target category
+    const ta = q.target_audience || 'all';
+    let targetCategory = null;
+    if (ta === 'contestants') targetCategory = 'contestant';
+    else if (ta === 'guests') targetCategory = 'guest';
+
+    // Get all users matching the target
+    let allStats = await base44.entities.UserStats.list();
+    let targetUsers = allStats;
+    if (targetCategory) {
+      targetUsers = allStats.filter(s => s.category === targetCategory);
+    } else if (ta === 'specific') {
+      const emails = q.target_emails || [];
+      targetUsers = allStats.filter(s => emails.includes(s.user_email));
+    }
+
+    // Get existing answers for this question
+    const existingAnswers = await base44.entities.Answer.filter({ question_id: q.id });
+    const answeredEmails = new Set(existingAnswers.map(a => a.user_email));
+
+    // Users who haven't answered
+    const notAnswered = targetUsers.filter(u => !answeredEmails.has(u.user_email));
+
+    if (notAnswered.length === 0) {
+      alert('جميع المستخدمين المستهدفين أجابوا على هذا السؤال');
+      return;
+    }
+
+    // Create missed answers for them
+    await Promise.all(notAnswered.map(u =>
+      base44.entities.Answer.create({
+        question_id: q.id,
+        user_email: u.user_email,
+        user_name: u.user_name || u.user_email,
+        user_answer: '',
+        is_correct: false,
+        points_earned: 0,
+        time_taken: 0,
+        day_number: q.day_number,
+        graded: false,
+      })
+    ));
+
+    alert(`✅ تم تسجيل ${notAnswered.length} شخص كفائت لهذا السؤال`);
+  };
 
   return (
     <>
@@ -87,6 +139,12 @@ export default function QuestionManager() {
                       className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="تعديل">
                       <Pencil className="w-4 h-4 text-muted-foreground" />
                     </button>
+                    {q.is_published && q.publish_date && (
+                      <button onClick={() => markMissed(q)} className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="تسجيل الفائتين"
+                        title="تسجيل من لم يجب كفائت">
+                        <AlertTriangle className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                      </button>
+                    )}
                     <button onClick={() => handleDelete(q.id)} className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="حذف">
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </button>
