@@ -35,8 +35,8 @@ export default function QuestionManager() {
   const typeMap = { multiple_choice: 'م.م', true_false: 'ص/خ', essay: 'مقالي' };
 
   const markMissed = async (q) => {
-    if (!q.is_published || !q.publish_date) {
-      alert('السؤال يجب أن يكون منشوراً وله تاريخ نشر');
+    if (!q.publish_date) {
+      alert('يجب تحديد تاريخ نشر للسؤال أولاً');
       return;
     }
 
@@ -68,7 +68,7 @@ export default function QuestionManager() {
       return;
     }
 
-    // Create missed answers for them
+    // Create missed answers for them — empty user_answer signals "missed", correct_answer stored in admin_note for display
     await Promise.all(notAnswered.map(u =>
       base44.entities.Answer.create({
         question_id: q.id,
@@ -80,6 +80,7 @@ export default function QuestionManager() {
         time_taken: 0,
         day_number: q.day_number,
         graded: false,
+        admin_note: `الإجابة الصحيحة: ${q.correct_answer}`,
       })
     ));
 
@@ -139,9 +140,10 @@ export default function QuestionManager() {
                       className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="تعديل">
                       <Pencil className="w-4 h-4 text-muted-foreground" />
                     </button>
-                    {q.is_published && q.publish_date && (
-                      <button onClick={() => markMissed(q)} className="p-1.5 rounded-lg bg-secondary tap-scale" aria-label="تسجيل الفائتين"
-                        title="تسجيل من لم يجب كفائت">
+                    {q.publish_date && (
+                      <button onClick={() => markMissed(q)} className="p-1.5 rounded-lg tap-scale" aria-label="تسجيل الفائتين"
+                        title="تسجيل من لم يجب كفائت"
+                        style={{ background: '#f59e0b18', border: '1px solid #f59e0b55' }}>
                         <AlertTriangle className="w-4 h-4" style={{ color: '#f59e0b' }} />
                       </button>
                     )}

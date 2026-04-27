@@ -48,6 +48,8 @@ function getDayStatus(dateStr, questions, answers) {
     if (a?.is_correct) status = 'correct';
     else if (a && !a.graded && q.type === 'essay' && a.user_answer) status = 'future';
     else if (a && a.user_answer) status = 'wrong';
+    // admin-marked missed: answer exists but user_answer is empty
+    else if (a && a.user_answer === '' && !a.is_correct) status = 'missed';
     else if (q.is_published) status = dateStr === today ? 'future' : 'missed';
     else status = 'future';
     return { q, a: a || null, status };
@@ -216,7 +218,7 @@ function DayDetail({ day, allAnswers }) {
                     <span className="text-xs text-muted-foreground">سؤال رقم {q.day_number}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-foreground">{typeMap[q.type] || q.type}</span>
                   </div>
-                  {hasAnswered ? (
+                  {(hasAnswered || status === 'missed') ? (
                     <p className="text-sm font-medium leading-relaxed text-foreground">{q.text}</p>
                   ) : (
                     <p className="text-sm text-muted-foreground italic">افتح الصندوق لرؤية السؤال 📦</p>
@@ -226,11 +228,30 @@ function DayDetail({ day, allAnswers }) {
                     <span className="text-sm font-bold" style={{ color: 'hsl(var(--primary))' }}>{q.points || getPointsForDay(q.day_number)}</span>
                   </div>
                 </div>
-                {hasAnswered && (
+                {/* Admin-marked missed: answer exists but empty user_answer */}
+                {hasAnswered && a?.user_answer === '' && status === 'missed' && (
+                  <div className="rounded-2xl overflow-hidden" style={{ border: '1.5px solid #f59e0b55', background: '#f59e0b0d' }}>
+                    <div className="flex items-center gap-2 px-4 py-3" style={{ background: '#f59e0b18', borderBottom: '1px solid #f59e0b33' }}>
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#f59e0b' }} />
+                      <p className="text-sm font-bold" style={{ color: '#f59e0b' }}>السؤال هذا فاتك</p>
+                    </div>
+                    <div className="px-4 py-3 space-y-2">
+                      <p className="text-sm font-medium text-foreground leading-relaxed">{q.text}</p>
+                      {q.correct_answer && (
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl" style={{ background: '#046B6715' }}>
+                          <span className="text-xs text-muted-foreground">الإجابة الصحيحة:</span>
+                          <span className="text-sm font-bold" style={{ color: '#046B67' }}>{q.correct_answer}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {/* Regular answered */}
+                {hasAnswered && a?.user_answer !== '' && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-secondary">
                       <span className="text-xs text-muted-foreground">إجابتك:</span>
-                      <span className="text-sm font-medium text-foreground">{a.user_answer || '—'}</span>
+                      <span className="text-sm font-medium text-foreground">{a.user_answer}</span>
                     </div>
                     {status !== 'future' && q?.correct_answer && (
                       <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: '#046B6715' }}>
@@ -246,7 +267,7 @@ function DayDetail({ day, allAnswers }) {
                     )}
                   </div>
                 )}
-                {status === 'missed' && (
+                {status === 'missed' && !hasAnswered && (
                   <div className="p-3 rounded-xl" style={{ background: '#f59e0b18' }}>
                     <p className="text-xs text-center" style={{ color: '#f59e0b' }}>🔒 انتهى وقت هذا السؤال وأُغلق</p>
                   </div>
