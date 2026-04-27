@@ -12,7 +12,7 @@ const tabs = [
 
 export default function TabBar({ activeTab, onTabChange }) {
   return (
-    <div className="fixed bottom-0 inset-x-0 z-40 flex justify-center pb-safe"
+    <div className="fixed bottom-0 inset-x-0 z-50 flex justify-center pb-safe"
       style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}>
       <div
         className="flex items-center gap-2 px-6 py-3 rounded-full shadow-card"

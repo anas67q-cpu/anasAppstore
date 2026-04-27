@@ -20,7 +20,7 @@ export default function BottomSheet({ open, onClose, children, title }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
             onClick={onClose}
           />
           <motion.div
@@ -29,8 +29,8 @@ export default function BottomSheet({ open, onClose, children, title }) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed inset-x-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-border"
-            style={{ background: 'hsl(var(--card))', bottom: 'calc(80px + max(env(safe-area-inset-bottom), 0px))', paddingBottom: '20px' }}
+            className="fixed bottom-0 inset-x-0 z-[70] max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-border pb-safe"
+            style={{ background: 'hsl(var(--card))', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
           >
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted" />
