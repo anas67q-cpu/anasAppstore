@@ -43,7 +43,7 @@ export default function useAppData() {
 
   const fetchQuestions = useCallback(async () => {
     if (!shouldRefetch('questions') && cache.questions) return cache.questions;
-    const q = await base44.entities.Question.filter({ is_published: true }, 'day_number');
+    const q = await base44.entities.Question.list('day_number', 200);
     cache.questions = q; cache.lastFetch.questions = Date.now();
     if (mounted.current) setQuestions(q);
     return q;
