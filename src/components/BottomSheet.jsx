@@ -29,8 +29,8 @@ export default function BottomSheet({ open, onClose, children, title }) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 inset-x-0 z-[70] max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-border pb-safe"
-            style={{ background: 'hsl(var(--card))', paddingBottom: 'max(env(safe-area-inset-bottom), 20px)' }}
+            className="fixed inset-x-0 z-[70] max-h-[85dvh] overflow-y-auto rounded-t-3xl border-t border-border"
+            style={{ background: 'hsl(var(--card))', bottom: 72, paddingBottom: 24 }}
           >
             <div className="flex justify-center pt-3 pb-1">
               <div className="w-10 h-1 rounded-full bg-muted" />
