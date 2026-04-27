@@ -39,7 +39,7 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
         ))
       ) : (
         <DailyQuestion
-          questions={questions}
+          questions={visibleQs}
           answers={answers}
           user={user}
           stats={stats}

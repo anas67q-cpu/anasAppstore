@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 import NativeSelect from '@/components/ui/NativeSelect';
-import { ImagePlus, X, Loader2 } from 'lucide-react';
+import { ImagePlus, X, Loader2, CheckCircle2 } from 'lucide-react';
 
 const TYPE_OPTIONS = [
   { value: 'multiple_choice', label: 'اختيار من متعدد' },
@@ -35,7 +35,12 @@ export default function QuestionForm({ question, onSaved }) {
   const [imageUrl, setImageUrl] = useState(question?.image_url || '');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [targetAudience, setTargetAudience] = useState(question?.target_audience || 'all');
-  const [targetEmails, setTargetEmails] = useState((question?.target_emails || []).join('\n'));
+  const [targetEmails, setTargetEmails] = useState(question?.target_emails || []);
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    base44.entities.UserStats.list().then(list => setAllUsers(list || [])).catch(() => {});
+  }, []);
 
   const suggestedPoints = dayNumber <= 10 ? 1 : dayNumber <= 20 ? 2 : 3;
   const [points, setPoints] = useState(question?.points || suggestedPoints);
@@ -62,9 +67,7 @@ export default function QuestionForm({ question, onSaved }) {
     setSaving(true);
     playTap();
     const finalCorrect = getFinalCorrectAnswer();
-    const emailList = targetAudience === 'specific'
-      ? targetEmails.split('\n').map(e => e.trim()).filter(Boolean)
-      : [];
+    const emailList = targetAudience === 'specific' ? targetEmails : [];
     const data = {
       text, type,
       options: type === 'multiple_choice' ? options.filter(o => o.trim()) : [],
@@ -145,14 +148,40 @@ export default function QuestionForm({ question, onSaved }) {
       </div>
       {targetAudience === 'specific' && (
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">البريد الإلكتروني (سطر لكل شخص)</label>
-          <textarea
-            value={targetEmails}
-            onChange={e => setTargetEmails(e.target.value)}
-            placeholder={"user1@example.com\nuser2@example.com"}
-            className={`${inputClass} min-h-[80px] resize-none`}
-            dir="ltr"
-          />
+          <label className="text-xs text-muted-foreground mb-1 block">
+            اختر المستخدمين ({targetEmails.length} محدد)
+          </label>
+          {allUsers.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-2">لا يوجد مستخدمون بعد</p>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto rounded-xl bg-secondary p-2">
+              {allUsers.map(u => {
+                const selected = targetEmails.includes(u.user_email);
+                return (
+                  <button
+                    key={u.user_email}
+                    type="button"
+                    onClick={() => {
+                      setTargetEmails(prev =>
+                        selected ? prev.filter(e => e !== u.user_email) : [...prev, u.user_email]
+                      );
+                    }}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-right transition-all"
+                    style={{
+                      background: selected ? '#046B6720' : 'hsl(var(--card))',
+                      border: `1px solid ${selected ? '#046B67' : 'transparent'}`,
+                    }}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{u.user_name || u.user_email}</p>
+                      <p className="text-[10px] text-muted-foreground">{u.user_email} · {u.category === 'contestant' ? 'متسابق' : 'ضيف'}</p>
+                    </div>
+                    {selected && <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: '#046B67' }} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

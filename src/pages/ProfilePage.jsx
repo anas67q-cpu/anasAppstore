@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import NameEditor from '@/components/profile/NameEditor';
+import StreakCard from '@/components/profile/StreakCard';
 import BadgesSection from '@/components/profile/BadgesSection';
 import LeaderboardSection from '@/components/profile/LeaderboardSection';
 import ComplaintsSection from '@/components/profile/ComplaintsSection';
@@ -60,6 +61,8 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
       )}
 
       <NameEditor userName={user?.full_name} statsName={stats?.user_name} onSave={updateUserName} />
+
+      <StreakCard streak={stats?.current_streak || 0} />
 
       <BadgesSection
         allBadges={allBadges}
