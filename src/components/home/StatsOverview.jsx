@@ -11,7 +11,7 @@ export default function StatsOverview({ stats }) {
   const data = [
     { name: 'صحيح', value: correct || 0.001, color: '#046B67' },
     { name: 'خاطئ', value: wrong || 0.001, color: '#ef4444' },
-    { name: 'فاتتك', value: missed || 0.001, color: '#f59e0b' },
+    { name: 'فاتك', value: missed || 0.001, color: '#f59e0b' },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default function StatsOverview({ stats }) {
         <div className="flex-1 space-y-2.5">
           <StatRow color="#046B67" label="صحيح" value={correct} total={total} />
           <StatRow color="#ef4444" label="خاطئ" value={wrong} total={total} />
-          <StatRow color="#f59e0b" label="فاتتك" value={missed} total={total} />
+          <StatRow color="#f59e0b" label="فاتك" value={missed} total={total} />
         </div>
       </div>
 

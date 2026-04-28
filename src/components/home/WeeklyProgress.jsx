@@ -180,8 +180,8 @@ function DayDetail({ day, allAnswers }) {
   const typeMap = { multiple_choice: 'اختيار من متعدد', true_false: 'صح أو خطأ', essay: 'مقالي' };
   const entries = day.entries && day.entries.length > 0 ? day.entries : (day.q ? [{ q: day.q, a: day.a, status: day.status }] : []);
   const statusLabels = {
-    correct: { label: 'أجبت صحيح ✅', color: '#046B67' },
-    wrong: { label: 'أجبت خاطئ ❌', color: '#ef4444' },
+    correct: { label: 'أجبت بشكل صحيح ✅', color: '#046B67' },
+    wrong: { label: 'أجبت بشكل خاطئ ❌', color: '#ef4444' },
     missed: { label: 'فاتك السؤال ⚠️', color: '#f59e0b' },
     future: { label: 'لم يحن وقته بعد', color: '#94a3b8' },
     none: { label: 'لا يوجد سؤال', color: '#94a3b8' },

@@ -72,8 +72,8 @@ export default function QuestionManager() {
     }
 
     // Create missed answers for them — empty user_answer signals "missed", correct_answer stored in admin_note for display
-    await Promise.all(notAnswered.map(u =>
-      base44.entities.Answer.create({
+    await Promise.all(notAnswered.map(async (u) => {
+      await base44.entities.Answer.create({
         question_id: q.id,
         user_email: u.user_email,
         user_name: u.user_name || u.user_email,
@@ -84,8 +84,15 @@ export default function QuestionManager() {
         day_number: q.day_number,
         graded: false,
         admin_note: `الإجابة الصحيحة: ${q.correct_answer}`,
-      })
-    ));
+      });
+      // Update user stats: increment total_missed
+      const statsArr = await base44.entities.UserStats.filter({ user_email: u.user_email });
+      if (statsArr[0]) {
+        await base44.entities.UserStats.update(statsArr[0].id, {
+          total_missed: (statsArr[0].total_missed || 0) + 1,
+        });
+      }
+    }));
 
     alert(`✅ تم تسجيل ${notAnswered.length} شخص كفائت لهذا السؤال`);
   };
