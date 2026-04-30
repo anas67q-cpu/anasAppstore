@@ -524,8 +524,6 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
         )}
       </motion.div>
 
-      {/* Streak Flame Guide */}
-      <StreakFlameGuide />
     </div>
   );
 }
