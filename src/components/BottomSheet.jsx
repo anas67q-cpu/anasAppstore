@@ -52,7 +52,13 @@ export default function BottomSheet({ open, onClose, children, title }) {
             onClick={onClose}
           />
 
-          {/* Sheet — covers TabBar, starts from bottom 0 */}
+          {/* Filler behind TabBar — same color as sheet so it looks seamless */}
+          <div
+            className="fixed inset-x-0 bottom-0 z-[99]"
+            style={{ height: 80, background: 'hsl(var(--card))' }}
+          />
+
+          {/* Sheet — floats above TabBar */}
           <motion.div
             ref={sheetRef}
             initial={{ y: '100%' }}
@@ -62,8 +68,9 @@ export default function BottomSheet({ open, onClose, children, title }) {
               ? { type: 'tween', duration: 0 }
               : { type: 'spring', damping: 30, stiffness: 300 }
             }
-            className="fixed inset-x-0 bottom-0 z-[100] max-h-[92dvh] flex flex-col rounded-t-3xl border-t border-border"
+            className="fixed inset-x-0 z-[100] max-h-[88dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
+              bottom: 72,
               background: 'hsl(var(--card))',
               paddingBottom: '16px',
             }}

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Lock, Timer, Clock, Send } from 'lucide-react';
+import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
+import StreakFlame, { StreakFlameGuide } from '@/components/challenge/StreakFlame';
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
@@ -203,6 +204,36 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
 
   // Waiting
   if (phase === 'waiting' || phase === 'init') {
+    // Check if we're within 30 minutes AFTER 9:30pm (question imminent)
+    const riyadhNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
+    const h = riyadhNow.getHours(), mn = riyadhNow.getMinutes();
+    const isImminentWindow = (h === 21 && mn >= 30) || (h === 22 && mn < 0); // 9:30-10:00pm
+    const justPassed930 = h === 21 && mn >= 30 && mn < 60;
+
+    if (justPassed930) {
+      // "Question is coming!" screen
+      return (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="card-surface shadow-card overflow-hidden text-center">
+          <div className="p-8 space-y-5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.08), hsl(var(--primary)/0.02))' }}>
+            <motion.div
+              animate={{ rotate: [0, -8, 8, -8, 8, 0], scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+              className="w-20 h-20 rounded-3xl mx-auto flex items-center justify-center text-4xl"
+              style={{ background: 'hsl(var(--primary)/0.12)', boxShadow: '0 0 30px hsl(var(--primary)/0.2)' }}
+            >
+              ⏳
+            </motion.div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-foreground">السؤال جاي الحين!</h3>
+              <p className="text-base font-bold" style={{ color: 'hsl(var(--primary))' }}>خلك مستعد 🎯</p>
+              <p className="text-sm text-muted-foreground">ستُحدَّث الصفحة تلقائياً عند نزول السؤال</p>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
     return (
       <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
         className="card-surface shadow-card p-8 text-center space-y-4">
@@ -414,76 +445,88 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   }
 
   // Result
-  // Check if there are more unanswered questions today
   const answeredIds = new Set(answers.map(a => a.question_id));
   const remainingQs = todayQs.filter(q => !answeredIds.has(q.id));
   const hasMoreQuestions = remainingQs.length > 0 && todayA !== null;
-
+  const currentStreak = stats?.current_streak || 0;
   const isEssayPending = todayA && !todayA.is_correct && todayQ?.type === 'essay' && todayA.user_answer;
+
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className="card-surface shadow-card overflow-hidden space-y-0">
-      <div className="p-6 text-center" style={{
-        background: isEssayPending ? '#6366f115' : (todayA?.is_correct ? '#046B6715' : '#ef444415')
-      }}>
-        {isEssayPending
-          ? <Clock className="w-14 h-14 mx-auto mb-3 text-indigo-400 animate-pulse" />
-          : todayA?.is_correct
-            ? <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: '#046B67' }} />
-            : <XCircle className="w-14 h-14 mx-auto mb-3" style={{ color: '#ef4444' }} />
-        }
-        <h3 className="text-xl font-bold text-foreground">
+    <div className="space-y-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="card-surface shadow-card overflow-hidden">
+        <div className="p-6 text-center" style={{
+          background: isEssayPending ? '#6366f115' : (todayA?.is_correct ? '#046B6715' : '#ef444415')
+        }}>
           {isEssayPending
-            ? 'بانتظار التصحيح'
+            ? <Clock className="w-14 h-14 mx-auto mb-3 text-indigo-400 animate-pulse" />
             : todayA?.is_correct
-              ? 'أحسنت! إجابة صحيحة 🎉'
-              : todayA?.user_answer
-                ? 'إجابة خاطئة'
-                : 'انتهى الوقت'
+              ? <CheckCircle2 className="w-14 h-14 mx-auto mb-3" style={{ color: '#046B67' }} />
+              : <XCircle className="w-14 h-14 mx-auto mb-3" style={{ color: '#ef4444' }} />
           }
-        </h3>
-        {isEssayPending && (
-          <p className="text-sm text-muted-foreground mt-1">ستظهر نتيجة الإجابة المقالية بعد تصحيح الإدارة</p>
-        )}
-        {todayA?.points_earned > 0 && (
-          <p className="text-base font-black mt-2" style={{ color: '#046B67' }}>+{todayA.points_earned} نقطة</p>
-        )}
-        {todayA && !todayA.is_correct && !isEssayPending && todayQ?.correct_answer && (
-          <p className="text-xs text-muted-foreground mt-2">
-            الإجابة الصحيحة: <span className="font-bold text-foreground">{todayQ.correct_answer}</span>
-          </p>
-        )}
-      </div>
-      {/* Admin note */}
-      {todayA?.admin_note && (
-        <div className="mx-5 mb-1 p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
-          <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
-          <p className="text-sm text-foreground">{todayA.admin_note}</p>
+          <h3 className="text-xl font-bold text-foreground">
+            {isEssayPending
+              ? 'بانتظار التصحيح'
+              : todayA?.is_correct
+                ? 'أحسنت! إجابة صحيحة 🎉'
+                : todayA?.user_answer
+                  ? 'إجابة خاطئة'
+                  : 'انتهى الوقت'
+            }
+          </h3>
+          {isEssayPending && (
+            <p className="text-sm text-muted-foreground mt-1">ستظهر نتيجة الإجابة المقالية بعد تصحيح الإدارة</p>
+          )}
+          {todayA?.points_earned > 0 && (
+            <p className="text-base font-black mt-2" style={{ color: '#046B67' }}>+{todayA.points_earned} نقطة</p>
+          )}
+          {todayA && !todayA.is_correct && !isEssayPending && todayQ?.correct_answer && (
+            <p className="text-xs text-muted-foreground mt-2">
+              الإجابة الصحيحة: <span className="font-bold text-foreground">{todayQ.correct_answer}</span>
+            </p>
+          )}
+          {/* Streak flame on correct answer */}
+          {todayA?.is_correct && currentStreak > 0 && (
+            <div className="mt-4 flex flex-col items-center gap-1">
+              <StreakFlame streak={currentStreak} size={42} />
+              <p className="text-xs text-muted-foreground">{currentStreak} إجابة صحيحة متتالية</p>
+            </div>
+          )}
         </div>
-      )}
-      {hasMoreQuestions ? (
-        <div className="p-5 text-center">
-          <p className="text-sm text-muted-foreground mb-3">يوجد {remainingQs.length} سؤال آخر اليوم!</p>
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={() => {
-              setSelectedAnswer(null); setPendingAnswer(null);
-              setEssayText(''); setEssaySent(false);
-              setPhase('preview');
-            }}
-            className="w-full py-4 rounded-2xl font-bold text-white"
-            style={{ background: 'hsl(var(--primary))' }}
-          >
-            السؤال التالي ←
-          </motion.button>
-        </div>
-      ) : (
-        <div className="p-5 text-center space-y-3">
-          <p className="text-sm text-muted-foreground">السؤال القادم خلال</p>
-          <p className="text-2xl font-black font-mono" style={{ color: 'hsl(var(--primary))' }}>{countdown}</p>
-        </div>
-      )}
-    </motion.div>
+        {/* Admin note */}
+        {todayA?.admin_note && (
+          <div className="mx-5 mb-1 p-3 rounded-xl border" style={{ borderColor: '#6366f140', background: '#6366f110' }}>
+            <p className="text-xs font-bold mb-1" style={{ color: '#6366f1' }}>ملاحظة الإدارة</p>
+            <p className="text-sm text-foreground">{todayA.admin_note}</p>
+          </div>
+        )}
+        {hasMoreQuestions ? (
+          <div className="p-5 text-center">
+            <p className="text-sm text-muted-foreground mb-3">يوجد {remainingQs.length} سؤال آخر اليوم!</p>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setSelectedAnswer(null); setPendingAnswer(null);
+                setEssayText(''); setEssaySent(false);
+                setPhase('preview');
+              }}
+              className="w-full py-4 rounded-2xl font-bold text-white"
+              style={{ background: 'hsl(var(--primary))' }}
+            >
+              السؤال التالي ←
+            </motion.button>
+          </div>
+        ) : (
+          <div className="p-5 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">السؤال القادم خلال</p>
+            <p className="text-2xl font-black font-mono" style={{ color: 'hsl(var(--primary))' }}>{countdown}</p>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Streak Flame Guide */}
+      <StreakFlameGuide />
+    </div>
   );
 }
 
