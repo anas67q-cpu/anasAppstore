@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, Sparkles } from 'lucid
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
-import StreakFlame, { StreakFlameGuide } from '@/components/challenge/StreakFlame';
+import StreakFlame from '@/components/challenge/StreakFlame';
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 

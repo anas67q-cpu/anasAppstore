@@ -1,86 +1,74 @@
-import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+import { useState, useEffect } from 'react';
 
-// Flame configs per streak level
-const FLAME_LEVELS = [
-  null, // 0 - no flame
-  // 1-4: growing orange flame
-  { emoji: '🔥', opacity: 0.35, scale: 0.7, color: '#f97316', label: 'بداية الاشتعال' },
-  { emoji: '🔥', opacity: 0.55, scale: 0.8, color: '#f97316', label: 'يشتعل أكثر' },
-  { emoji: '🔥', opacity: 0.75, scale: 0.9, color: '#ef4444', label: 'مشتعل!' },
-  { emoji: '🔥', opacity: 1,    scale: 1.0, color: '#dc2626', label: 'نار حامية 🔥' },
-  // 5-9: purple flame with different icon feel
-  { emoji: '🌟', opacity: 1, scale: 1.05, color: '#a855f7', label: 'مشتعل بنفسجي ✨', purple: true },
-  { emoji: '🌟', opacity: 1, scale: 1.08, color: '#9333ea', label: 'قوة بنفسجية', purple: true },
-  { emoji: '🌟', opacity: 1, scale: 1.1,  color: '#7c3aed', label: 'قوة خارقة', purple: true },
-  { emoji: '🌟', opacity: 1, scale: 1.12, color: '#6d28d9', label: 'غامق ورائع', purple: true },
-  { emoji: '🌟', opacity: 1, scale: 1.14, color: '#5b21b6', label: 'مميز جداً', purple: true },
-  // 10+: blue/navy royal flame
-  { emoji: '⚡', opacity: 1, scale: 1.2, color: '#1e40af', label: 'اشتعال ملكي 👑', royal: true },
-];
+const FIRE_URL = 'https://media.base44.com/files/public/69daa39f99dd53afa074a17a/916375250_Fire.json';
 
-function getLevel(streak) {
-  if (!streak || streak <= 0) return null;
-  if (streak >= 10) return FLAME_LEVELS[10];
-  return FLAME_LEVELS[streak] || FLAME_LEVELS[4];
+// Cache: _base = raw JSON, original/blue/purple = tinted versions
+const cache = {};
+
+function tintLottie(data, rgb) {
+  const clone = JSON.parse(JSON.stringify(data));
+  function walk(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) { obj.forEach(walk); return; }
+    if ((obj.ty === 'gf' || obj.ty === 'gs') && obj.g?.k?.k) {
+      const kk = obj.g.k.k;
+      for (let i = 0; i < kk.length; i += 4) {
+        if (i + 3 < kk.length) {
+          kk[i + 1] = rgb[0];
+          kk[i + 2] = rgb[1];
+          kk[i + 3] = rgb[2];
+        }
+      }
+    }
+    Object.values(obj).forEach(walk);
+  }
+  walk(clone);
+  return clone;
+}
+
+const BLUE_RGB   = [0.18, 0.55, 1.0];
+const PURPLE_RGB = [0.58, 0.18, 0.9];
+
+function getColorKey(streak) {
+  if (streak >= 10) return 'purple';
+  if (streak >= 5)  return 'blue';
+  return 'original';
 }
 
 export default function StreakFlame({ streak, size = 28 }) {
-  const level = getLevel(streak);
-  if (!level) return null;
+  const [animData, setAnimData] = useState(() => {
+    const key = getColorKey(streak || 0);
+    return cache[key] || null;
+  });
 
-  const glowColor = level.royal
-    ? '0 0 12px #3b82f6, 0 0 24px #1e40af'
-    : level.purple
-      ? '0 0 10px #a855f7, 0 0 20px #7c3aed'
-      : `0 0 8px ${level.color}88`;
+  useEffect(() => {
+    if (!streak || streak <= 0) return;
+    const colorKey = getColorKey(streak);
+    if (cache[colorKey]) { setAnimData(cache[colorKey]); return; }
 
-  return (
-    <motion.span
-      key={streak}
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: level.scale, opacity: level.opacity }}
-      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-      style={{
-        fontSize: size,
-        display: 'inline-flex',
-        filter: `drop-shadow(${glowColor})`,
-        lineHeight: 1,
-      }}
-    >
-      {level.emoji}
-    </motion.span>
-  );
-}
+    (async () => {
+      let base = cache['_base'];
+      if (!base) {
+        const res = await fetch(FIRE_URL);
+        base = await res.json();
+        cache['_base'] = base;
+      }
+      const tinted = colorKey === 'original'
+        ? base
+        : tintLottie(base, colorKey === 'blue' ? BLUE_RGB : PURPLE_RGB);
+      cache[colorKey] = tinted;
+      setAnimData(tinted);
+    })();
+  }, [streak]);
 
-// Guide component to show all levels
-export function StreakFlameGuide() {
-  const levels = [
-    { streak: 1, label: FLAME_LEVELS[1].label },
-    { streak: 2, label: FLAME_LEVELS[2].label },
-    { streak: 3, label: FLAME_LEVELS[3].label },
-    { streak: 4, label: FLAME_LEVELS[4].label },
-    { streak: 5, label: FLAME_LEVELS[5].label },
-    { streak: 6, label: FLAME_LEVELS[6].label },
-    { streak: 7, label: FLAME_LEVELS[7].label },
-    { streak: 8, label: FLAME_LEVELS[8].label },
-    { streak: 9, label: FLAME_LEVELS[9].label },
-    { streak: 10, label: FLAME_LEVELS[10].label },
-  ];
+  if (!streak || streak <= 0) return null;
 
   return (
-    <div className="card-surface p-4 space-y-3">
-      <h4 className="text-sm font-bold text-foreground text-center">دليل سلسلة الإجابات</h4>
-      <div className="grid grid-cols-2 gap-2">
-        {levels.map(({ streak, label }) => (
-          <div key={streak} className="flex items-center gap-2 p-2 rounded-xl bg-secondary">
-            <StreakFlame streak={streak} size={22} />
-            <div>
-              <p className="text-[10px] text-muted-foreground">إجابة {streak}</p>
-              <p className="text-xs font-medium text-foreground">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div style={{ width: size, height: size, display: 'inline-flex', flexShrink: 0 }}>
+      {animData && (
+        <Lottie animationData={animData} loop autoplay style={{ width: '100%', height: '100%' }} />
+      )}
     </div>
   );
 }
