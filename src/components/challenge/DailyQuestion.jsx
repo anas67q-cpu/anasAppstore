@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, Sparkles } from 'lucid
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
-import StreakFlame from '@/components/challenge/StreakFlame';
+
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
@@ -485,13 +485,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
               الإجابة الصحيحة: <span className="font-bold text-foreground">{todayQ.correct_answer}</span>
             </p>
           )}
-          {/* Streak flame on correct answer */}
-          {todayA?.is_correct && currentStreak > 0 && (
-            <div className="mt-4 flex flex-col items-center gap-1">
-              <StreakFlame streak={currentStreak} size={42} />
-              <p className="text-xs text-muted-foreground">{currentStreak} إجابة صحيحة متتالية</p>
-            </div>
-          )}
+
         </div>
         {/* Admin note */}
         {todayA?.admin_note && (
