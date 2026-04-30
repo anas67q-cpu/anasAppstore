@@ -65,7 +65,7 @@ export default function BottomSheet({ open, onClose, children, title }) {
             className="fixed inset-x-0 bottom-0 z-[100] max-h-[92dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
               background: 'hsl(var(--card))',
-              paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+              paddingBottom: '16px',
             }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
