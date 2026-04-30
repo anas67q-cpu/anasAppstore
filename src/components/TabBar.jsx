@@ -12,11 +12,19 @@ const tabs = [
 
 export default function TabBar({ activeTab, onTabChange }) {
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 flex justify-center pb-safe"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}>
+    <div
+      className="fixed bottom-0 inset-x-0 z-50 flex justify-center"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 12px)' }}
+    >
       <div
-        className="flex items-center gap-2 px-6 py-3 rounded-full shadow-card"
-        style={{ background: 'hsl(var(--tabbar-bg))', border: '1px solid hsl(var(--border))' }}
+        className="flex items-center gap-1 px-4 py-2 rounded-full shadow-card"
+        style={{
+          background: 'hsl(var(--tabbar-bg))',
+          border: '1px solid hsl(var(--border))',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+        }}
       >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -26,21 +34,33 @@ export default function TabBar({ activeTab, onTabChange }) {
               key={tab.id}
               aria-label={LABELS[tab.id]}
               onClick={() => { playTap(); onTabChange(tab.id); }}
-              className="relative flex flex-col items-center px-6 py-1 tap-scale"
+              className="relative flex flex-col items-center gap-0.5 px-5 py-1.5 rounded-full tap-scale"
+              style={{
+                background: isActive ? 'hsl(var(--primary) / 0.12)' : 'transparent',
+                transition: 'background 0.2s ease',
+              }}
             >
-              <Icon
-                className="w-6 h-6 transition-colors duration-200"
-                style={{ color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}
-                strokeWidth={isActive ? 2.5 : 1.8}
-              />
-              {isActive && (
-                <motion.div
-                  layoutId="tab-indicator"
-                  className="absolute -bottom-1 w-6 h-0.5 rounded-full"
-                  style={{ background: 'hsl(var(--primary))' }}
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              <motion.div
+                animate={{ scale: isActive ? 1.1 : 1, y: isActive ? -1 : 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              >
+                <Icon
+                  className="w-6 h-6"
+                  style={{
+                    color: isActive ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
+                    transition: 'color 0.2s ease',
+                  }}
+                  strokeWidth={isActive ? 2.5 : 1.8}
                 />
-              )}
+              </motion.div>
+              <motion.span
+                className="text-[9px] font-medium"
+                animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 4 }}
+                transition={{ duration: 0.2 }}
+                style={{ color: 'hsl(var(--primary))' }}
+              >
+                {LABELS[tab.id]}
+              </motion.span>
             </button>
           );
         })}

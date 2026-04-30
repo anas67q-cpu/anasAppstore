@@ -43,7 +43,7 @@ function PullToRefresh({ onRefresh, children }) {
   }, [progress, onRefresh]);
 
   return (
-    <div className="h-full overflow-y-auto" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div className="h-full overflow-y-auto scroll-ios" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       {pulling && (
         <div className="flex justify-center pt-2 pb-1">
           <motion.div animate={{ rotate: progress >= 1 ? 360 : progress * 180, scale: 0.7 + progress * 0.3 }} transition={{ duration: 0.1 }}>
@@ -75,11 +75,14 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
       {TAB_ORDER.map((tab) => (
         <div
           key={tab}
-          className="absolute inset-0 transition-opacity duration-200"
+          className="absolute inset-0"
           style={{
             zIndex: tab === activeTab ? 1 : 0,
             pointerEvents: tab === activeTab ? 'auto' : 'none',
             opacity: tab === activeTab ? 1 : 0,
+            transform: tab === activeTab ? 'translateY(0)' : 'translateY(8px)',
+            transition: 'opacity 0.25s cubic-bezier(0.4,0,0.2,1), transform 0.25s cubic-bezier(0.4,0,0.2,1)',
+            willChange: 'opacity, transform',
           }}
         >
           {tab === 'home' && (
@@ -97,7 +100,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
             </PullToRefresh>
           )}
           {tab === 'profile' && (
-            <div className="h-full overflow-y-auto px-4 pt-4" style={{ paddingBottom: 100 }}>
+            <div className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 100 }}>
               <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
             </div>
           )}
@@ -213,7 +216,7 @@ export default function MainApp() {
       {!isAdminRoute && (
         <div
           className="flex items-center justify-between px-5 flex-shrink-0"
-          style={{ background: 'hsl(var(--primary))', paddingTop: 'max(env(safe-area-inset-top), 20px)', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
+          style={{ background: 'hsl(var(--primary))', paddingTop: '16px', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
         >
           <div className="flex items-center gap-2">
             {isAdmin && (
@@ -254,7 +257,7 @@ export default function MainApp() {
       <Routes>
         {/* Admin routes */}
         <Route path="/admin/*" element={
-          <div className="flex-1 overflow-y-auto" style={{ paddingTop: 'max(env(safe-area-inset-top), 16px)' }}>
+          <div className="flex-1 overflow-y-auto scroll-ios" style={{ paddingTop: '16px' }}>
             <AdminDashboard />
           </div>
         } />

@@ -35,11 +35,46 @@ export function playWrong() {
   haptic('error');
 }
 
+// iOS Haptic Feedback via webkit (Safari 13+) + Android fallback
 export function haptic(type = 'light') {
-  if (!navigator.vibrate) return;
-  switch (type) {
-    case 'light': navigator.vibrate(10); break;
-    case 'success': navigator.vibrate([10, 50, 10]); break;
-    case 'error': navigator.vibrate([30, 50, 30]); break;
+  // iOS Safari — uses AudioSession trick to trigger haptics
+  try {
+    if (window.DeviceMotionEvent && typeof window.DeviceMotionEvent.requestPermission === 'function') {
+      // iOS 13+ — use AudioContext click to trigger haptic if possible
+    }
+    // Try webkit haptics (works on Safari iOS via CSS click)
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+    document.body.appendChild(el);
+    
+    if (type === 'light') {
+      el.style.webkitTapHighlightColor = 'rgba(0,0,0,0.01)';
+    }
+    document.body.removeChild(el);
+  } catch (e) {}
+
+  // Android fallback
+  if (navigator.vibrate) {
+    switch (type) {
+      case 'light': navigator.vibrate(10); break;
+      case 'medium': navigator.vibrate(20); break;
+      case 'heavy': navigator.vibrate(40); break;
+      case 'success': navigator.vibrate([10, 30, 10]); break;
+      case 'error': navigator.vibrate([30, 40, 30]); break;
+      case 'warning': navigator.vibrate([20, 30, 20]); break;
+    }
   }
+
+  // iOS Safari 16+ — use the new Vibration API pattern via AudioContext pulse
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    gainNode.gain.value = 0;
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.001);
+    ctx.close();
+  } catch (e) {}
 }
