@@ -70,9 +70,9 @@ export default function BottomSheet({ open, onClose, children, title }) {
             }
             className="fixed inset-x-0 z-[100] max-h-[88dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
-              bottom: 72,
+              bottom: 'calc(72px + var(--sab, 0px))',
               background: 'hsl(var(--card))',
-              paddingBottom: '16px',
+              paddingBottom: 'calc(16px + var(--sab, 0px))',
             }}
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}

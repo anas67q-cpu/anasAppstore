@@ -14,7 +14,7 @@ export default function TabBar({ activeTab, onTabChange }) {
   return (
     <div
       className="fixed bottom-0 inset-x-0 z-50 flex justify-center"
-      style={{ paddingBottom: '20px' }}
+      style={{ paddingBottom: 'calc(12px + var(--sab, 0px))' }}
     >
       <div
         className="flex items-center gap-1 px-4 py-2 rounded-full shadow-card"

@@ -87,20 +87,20 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
         >
           {tab === 'home' && (
             <PullToRefresh onRefresh={handleRefresh}>
-              <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
+              <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <HomePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} allStats={sharedProps.allStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'challenge' && (
             <PullToRefresh onRefresh={handleRefresh}>
-              <div className="px-4 pt-4" style={{ paddingBottom: 100 }}>
+              <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'profile' && (
-            <div className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 100 }}>
+            <div className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
               <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
             </div>
           )}
@@ -216,7 +216,7 @@ export default function MainApp() {
       {!isAdminRoute && (
         <div
           className="flex items-center justify-between px-5 flex-shrink-0"
-          style={{ background: 'hsl(var(--primary))', paddingTop: '16px', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
+          style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, var(--sat, 0px))', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
         >
           <div className="flex items-center gap-2">
             {isAdmin && (

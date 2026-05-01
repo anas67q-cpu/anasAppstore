@@ -7,6 +7,8 @@
 @layer base {
   /* LIGHT MODE (default) */
   :root {
+    --sat: env(safe-area-inset-top);
+    --sab: env(safe-area-inset-bottom);
     --font-rubik: 'Rubik', sans-serif;
     --background: 0 0% 96%;
     --foreground: 0 0% 8%;
@@ -74,6 +76,7 @@
     user-select: none;
     overflow: hidden;
     height: 100dvh;
+    padding-top: var(--sat);
     /* iOS momentum scrolling */
     -webkit-overflow-scrolling: touch;
   }
