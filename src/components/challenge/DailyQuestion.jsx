@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, Sparkles } from 'lucide-react';
+import Lottie from 'lottie-react';
+
+const EMOJI_LOADING_URL = 'https://media.base44.com/files/public/69daa39f99dd53afa074a17a/20fb7618b_Emojiloading.json';
+let emojiLoadingCache = null;
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
@@ -211,27 +215,7 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     const justPassed930 = h === 21 && mn >= 30 && mn < 60;
 
     if (justPassed930) {
-      // "Question is coming!" screen
-      return (
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="card-surface shadow-card overflow-hidden text-center">
-          <div className="p-8 space-y-5" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)/0.08), hsl(var(--primary)/0.02))' }}>
-            <motion.div
-              animate={{ rotate: [0, -8, 8, -8, 8, 0], scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-              className="w-20 h-20 rounded-3xl mx-auto flex items-center justify-center text-4xl"
-              style={{ background: 'hsl(var(--primary)/0.12)', boxShadow: '0 0 30px hsl(var(--primary)/0.2)' }}
-            >
-              ⏳
-            </motion.div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-black text-foreground">السؤال جاي الحين!</h3>
-              <p className="text-base font-bold" style={{ color: 'hsl(var(--primary))' }}>خلك مستعد 🎯</p>
-              <p className="text-sm text-muted-foreground">ستُحدَّث الصفحة تلقائياً عند نزول السؤال</p>
-            </div>
-          </div>
-        </motion.div>
-      );
+      return <ComingSoonScreen />;
     }
 
     return (
@@ -528,5 +512,53 @@ function InfoBox({ label, value, accent }) {
       <p className="text-sm font-bold" style={{ color: accent ? 'hsl(var(--primary))' : 'hsl(var(--foreground))' }}>{value}</p>
       <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
     </div>
+  );
+}
+
+function ComingSoonScreen() {
+  const [animData, setAnimData] = useState(emojiLoadingCache);
+
+  useEffect(() => {
+    if (emojiLoadingCache) { setAnimData(emojiLoadingCache); return; }
+    fetch(EMOJI_LOADING_URL)
+      .then(r => r.json())
+      .then(data => { emojiLoadingCache = data; setAnimData(data); });
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="card-surface shadow-card overflow-hidden text-center"
+    >
+      <div
+        className="px-8 pt-10 pb-8 space-y-4 flex flex-col items-center"
+        style={{ background: 'linear-gradient(160deg, hsl(var(--primary)/0.07), hsl(var(--primary)/0.01))' }}
+      >
+        {/* Lottie animation */}
+        <div style={{ width: 180, height: 180 }}>
+          {animData ? (
+            <Lottie animationData={animData} loop autoplay style={{ width: '100%', height: '100%' }} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-5xl">⏳</div>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          <h3
+            className="text-3xl font-black"
+            style={{ color: 'hsl(var(--primary))' }}
+          >
+            السؤال جاي الحين!
+          </h3>
+          <p className="text-lg font-bold text-foreground">
+            🎯 خلك مستعد
+          </p>
+          <p className="text-sm font-medium text-muted-foreground">
+            ستُحدَّث الصفحة تلقائياً عند نزول السؤال
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 }

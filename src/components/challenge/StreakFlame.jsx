@@ -54,25 +54,7 @@ function tintLottie(data, layerColors) {
   return clone;
 }
 
-// Blue theme: outer=deep blue, mid=blue, inner=light cyan
-const BLUE_PALETTE = [
-  [0.10, 0.30, 0.90],  // deep blue
-  [0.18, 0.52, 1.00],  // blue
-  [0.30, 0.80, 1.00],  // light cyan
-  [0.70, 0.95, 1.00],  // very light cyan (inner core)
-];
-
-// Purple theme: outer=deep purple, mid=purple, inner=lavender
-const PURPLE_PALETTE = [
-  [0.40, 0.05, 0.75],  // deep purple
-  [0.58, 0.18, 0.90],  // purple
-  [0.75, 0.45, 1.00],  // lavender
-  [0.90, 0.80, 1.00],  // very light lavender (inner core)
-];
-
 function getColorKey(streak) {
-  if (streak >= 10) return 'purple';
-  if (streak >= 5)  return 'blue';
   return 'original';
 }
 
@@ -94,16 +76,8 @@ export default function StreakFlame({ streak, size = 28 }) {
         base = await res.json();
         cache['_base'] = base;
       }
-      let tinted;
-      if (colorKey === 'original') {
-        tinted = base;
-      } else if (colorKey === 'blue') {
-        tinted = tintLottie(base, BLUE_PALETTE);
-      } else {
-        tinted = tintLottie(base, PURPLE_PALETTE);
-      }
-      cache[colorKey] = tinted;
-      setAnimData(tinted);
+      cache[colorKey] = base;
+      setAnimData(base);
     })();
   }, [streak]);
 
