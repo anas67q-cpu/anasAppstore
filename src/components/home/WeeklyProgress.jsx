@@ -43,17 +43,15 @@ function getDayStatus(dateStr, questions, answers) {
   const today = getRiyadhToday();
 
   const entries = qs.sort((a, b) => (a.day_number || 0) - (b.day_number || 0)).map(q => {
-    const a = answers.find(a => a.question_id === q.id);
-    let status;
-    if (a?.is_correct) status = 'correct';
-    else if (a && !a.graded && q.type === 'essay' && a.user_answer) status = 'future';
-    else if (a && a.user_answer) status = 'wrong';
-    // admin-marked missed: answer exists but user_answer is empty (regardless of is_published)
-    else if (a && a.user_answer === '' && !a.is_correct) status = 'missed';
-    else if (q.is_published && dateStr !== today) status = 'missed';
-    else if (q.is_published && dateStr === today) status = 'future';
-    else status = 'future';
-    return { q, a: a || null, status };
+  const a = answers.find(a => a.question_id === q.id);
+  let status;
+  if (a?.is_correct) status = 'correct';
+  else if (a && !a.graded && q.type === 'essay' && a.user_answer) status = 'future';
+  else if (a && a.user_answer) status = 'wrong';
+  // admin-marked missed only: answer exists with empty user_answer (created by admin via markMissed)
+  else if (a && a.user_answer === '' && !a.is_correct) status = 'missed';
+  else status = 'future';
+  return { q, a: a || null, status };
   });
 
   const priority = { correct: 0, wrong: 1, missed: 2, future: 3 };
