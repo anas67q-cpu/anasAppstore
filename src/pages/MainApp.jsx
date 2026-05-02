@@ -109,9 +109,11 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
             </PullToRefresh>
           )}
           {tab === 'profile' && (
-            <div ref={scrollRefs.profile} className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-              <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
-            </div>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile}>
+              <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
+                <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
+              </div>
+            </PullToRefresh>
           )}
         </div>
       ))}
