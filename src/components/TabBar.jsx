@@ -13,7 +13,7 @@ const tabs = [
 export default function TabBar({ activeTab, onTabChange }) {
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-50 flex justify-center"
+      className="fixed bottom-0 inset-x-0 z-50 flex justify-center ui-no-select"
       style={{ paddingBottom: 'calc(12px + var(--sab, 0px))' }}
     >
       <div

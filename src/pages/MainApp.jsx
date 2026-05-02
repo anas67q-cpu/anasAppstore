@@ -15,17 +15,19 @@ import { playTap } from '@/lib/sounds';
 
 const TAB_ORDER = ['home', 'challenge', 'profile'];
 
-function PullToRefresh({ onRefresh, children }) {
+function PullToRefresh({ onRefresh, children, scrollRef }) {
+  const internalRef = useRef(null);
+  const containerRef = scrollRef || internalRef;
   const startY = useRef(null);
   const [pulling, setPulling] = useState(false);
   const [progress, setProgress] = useState(0);
   const THRESHOLD = 72;
 
   const onTouchStart = useCallback((e) => {
-    const el = e.currentTarget;
-    if (el.scrollTop > 0) return;
+    const el = containerRef.current;
+    if (el && el.scrollTop > 0) return;
     startY.current = e.touches[0].clientY;
-  }, []);
+  }, [containerRef]);
 
   const onTouchMove = useCallback((e) => {
     if (startY.current === null) return;
@@ -43,7 +45,7 @@ function PullToRefresh({ onRefresh, children }) {
   }, [progress, onRefresh]);
 
   return (
-    <div className="h-full overflow-y-auto scroll-ios" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div ref={containerRef} className="h-full overflow-y-auto scroll-ios" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       {pulling && (
         <div className="flex justify-center pt-2 pb-1">
           <motion.div animate={{ rotate: progress >= 1 ? 360 : progress * 180, scale: 0.7 + progress * 0.3 }} transition={{ duration: 0.1 }}>
@@ -60,12 +62,19 @@ function PullToRefresh({ onRefresh, children }) {
 function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
 
   const activeTab = TAB_ORDER.find(t => location.pathname.startsWith(`/${t}`)) || 'home';
 
   const handleTabChange = (tab) => {
-    if (tab === activeTab) return;
     playTap();
+    if (tab === activeTab) {
+      // Scroll to top if already on this tab
+      const el = scrollRefs[tab]?.current;
+      if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate(`/${tab}`);
+      return;
+    }
     navigate(`/${tab}`);
   };
 
@@ -86,21 +95,21 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           }}
         >
           {tab === 'home' && (
-            <PullToRefresh onRefresh={handleRefresh}>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.home}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <HomePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} allStats={sharedProps.allStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'challenge' && (
-            <PullToRefresh onRefresh={handleRefresh}>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.challenge}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'profile' && (
-            <div className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
+            <div ref={scrollRefs.profile} className="h-full overflow-y-auto scroll-ios px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
               <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
             </div>
           )}
@@ -215,7 +224,7 @@ export default function MainApp() {
       {/* Header — hidden on admin routes */}
       {!isAdminRoute && (
         <div
-          className="flex items-center justify-between px-5 flex-shrink-0"
+          className="flex items-center justify-between px-5 flex-shrink-0 ui-no-select"
           style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, var(--sat, 0px))', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
         >
           <div className="flex items-center gap-2">

@@ -72,8 +72,6 @@
     @apply bg-background text-foreground font-rubik;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
-    -webkit-touch-callout: none;
-    user-select: none;
     overflow: hidden;
     height: 100dvh;
     padding-top: var(--sat);
@@ -100,6 +98,10 @@
     @apply active:scale-95 transition-transform duration-150;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+  }
+  .ui-no-select {
+    user-select: none;
+    -webkit-touch-callout: none;
   }
   /* Smooth scrollable areas for iOS */
   .scroll-ios {

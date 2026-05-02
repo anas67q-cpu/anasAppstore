@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
@@ -117,20 +117,40 @@ function AdminHome() {
   );
 }
 
-export default function AdminDashboard() {
+function AnimatedPage({ children }) {
   return (
-    <Routes>
-      <Route path="/" element={<AdminHome />} />
-      <Route path="/questions" element={<QuestionManager />} />
-      <Route path="/essay" element={<EssayReview />} />
-      <Route path="/answers" element={<AnswerViewer />} />
-      <Route path="/activity" element={<ActivityLogViewer />} />
-      <Route path="/complaints" element={<ComplaintsManager />} />
-      <Route path="/users" element={<UserManager />} />
-      <Route path="/badges" element={<BadgeManager />} />
-      <Route path="/images" element={<ImageManager />} />
-      <Route path="/info" element={<CompetitionInfoManager />} />
-      <Route path="*" element={<Navigate to="/admin" replace />} />
-    </Routes>
+    <motion.div
+      initial={{ x: '-100%', opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: '-100%', opacity: 0 }}
+      transition={{ type: 'tween', duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{ position: 'absolute', inset: 0, overflowY: 'auto' }}
+      className="scroll-ios"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export default function AdminDashboard() {
+  const location = useLocation();
+  return (
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<AnimatedPage><AdminHome /></AnimatedPage>} />
+          <Route path="/questions" element={<AnimatedPage><QuestionManager /></AnimatedPage>} />
+          <Route path="/essay" element={<AnimatedPage><EssayReview /></AnimatedPage>} />
+          <Route path="/answers" element={<AnimatedPage><AnswerViewer /></AnimatedPage>} />
+          <Route path="/activity" element={<AnimatedPage><ActivityLogViewer /></AnimatedPage>} />
+          <Route path="/complaints" element={<AnimatedPage><ComplaintsManager /></AnimatedPage>} />
+          <Route path="/users" element={<AnimatedPage><UserManager /></AnimatedPage>} />
+          <Route path="/badges" element={<AnimatedPage><BadgeManager /></AnimatedPage>} />
+          <Route path="/images" element={<AnimatedPage><ImageManager /></AnimatedPage>} />
+          <Route path="/info" element={<AnimatedPage><CompetitionInfoManager /></AnimatedPage>} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </AnimatePresence>
+    </div>
   );
 }
