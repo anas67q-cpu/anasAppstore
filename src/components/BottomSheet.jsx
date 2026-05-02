@@ -66,7 +66,7 @@ export default function BottomSheet({ open, onClose, children, title }) {
             exit={{ y: '100%' }}
             transition={dragging
               ? { type: 'tween', duration: 0 }
-              : { type: 'spring', damping: 30, stiffness: 300 }
+              : { type: 'spring', damping: 40, stiffness: 200, mass: 1.1 }
             }
             className="fixed inset-x-0 z-[100] max-h-[88dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
