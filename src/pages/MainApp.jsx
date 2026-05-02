@@ -89,9 +89,8 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
             zIndex: tab === activeTab ? 1 : 0,
             pointerEvents: tab === activeTab ? 'auto' : 'none',
             opacity: tab === activeTab ? 1 : 0,
-            transform: tab === activeTab ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 0.25s cubic-bezier(0.4,0,0.2,1), transform 0.25s cubic-bezier(0.4,0,0.2,1)',
-            willChange: 'opacity, transform',
+            transition: 'opacity 0.2s cubic-bezier(0.4,0,0.2,1)',
+            willChange: 'opacity',
           }}
         >
           {tab === 'home' && (
