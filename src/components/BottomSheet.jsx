@@ -52,10 +52,21 @@ export default function BottomSheet({ open, onClose, children, title }) {
             onClick={onClose}
           />
 
-          {/* Filler behind TabBar — same color as sheet so it looks seamless */}
-          <div
-            className="fixed inset-x-0 bottom-0 z-[99]"
-            style={{ height: 80, background: 'hsl(var(--card))' }}
+          {/* Filler behind TabBar — attached below the sheet */}
+          <motion.div
+            className="fixed inset-x-0 z-[99]"
+            initial={{ y: '100%' }}
+            animate={{ y: dragOffset }}
+            exit={{ y: '100%' }}
+            transition={dragging
+              ? { type: 'tween', duration: 0 }
+              : { type: 'spring', damping: 40, stiffness: 200, mass: 1.1 }
+            }
+            style={{
+              bottom: 0,
+              height: 'calc(72px + var(--sab, 0px))',
+              background: 'hsl(var(--card))',
+            }}
           />
 
           {/* Sheet — floats above TabBar */}
