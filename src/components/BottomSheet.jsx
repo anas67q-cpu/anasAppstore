@@ -68,7 +68,7 @@ export default function BottomSheet({ open, onClose, children, title }) {
               ? { type: 'tween', duration: 0 }
               : { type: 'spring', damping: 40, stiffness: 200, mass: 1.1 }
             }
-            className="fixed inset-x-0 z-[100] max-h-[88dvh] flex flex-col rounded-t-3xl border-t border-border"
+            className="fixed inset-x-0 z-[100] max-h-[78dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
               bottom: 'calc(72px + var(--sab, 0px))',
               background: 'hsl(var(--card))',
