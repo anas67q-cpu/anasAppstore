@@ -15,7 +15,7 @@ import { playTap } from '@/lib/sounds';
 
 const TAB_ORDER = ['home', 'challenge', 'profile'];
 
-function PullToRefresh({ onRefresh, children, scrollRef }) {
+function PullToRefresh({ onRefresh, children, scrollRef, refreshing }) {
   const internalRef = useRef(null);
   const containerRef = scrollRef || internalRef;
   const startY = useRef(null);
@@ -44,12 +44,17 @@ function PullToRefresh({ onRefresh, children, scrollRef }) {
     setProgress(0);
   }, [progress, onRefresh]);
 
+  const showSpinner = pulling || refreshing;
+
   return (
     <div ref={containerRef} className="h-full overflow-y-auto scroll-ios" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      {pulling && (
+      {showSpinner && (
         <div className="flex justify-center pt-2 pb-1">
-          <motion.div animate={{ rotate: progress >= 1 ? 360 : progress * 180, scale: 0.7 + progress * 0.3 }} transition={{ duration: 0.1 }}>
-            <RefreshCw className="w-5 h-5" style={{ color: 'hsl(var(--primary))', opacity: progress }} />
+          <motion.div
+            animate={{ rotate: refreshing ? 360 : progress * 180, scale: refreshing ? 1 : 0.7 + progress * 0.3 }}
+            transition={refreshing ? { repeat: Infinity, duration: 0.7, ease: 'linear' } : { duration: 0.1 }}
+          >
+            <RefreshCw className="w-5 h-5" style={{ color: 'hsl(var(--primary))', opacity: refreshing ? 1 : progress }} />
           </motion.div>
         </div>
       )}
@@ -59,7 +64,7 @@ function PullToRefresh({ onRefresh, children, scrollRef }) {
 }
 
 // Shell that keeps all tabs mounted (preserves scroll + state)
-function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings }) {
+function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing }) {
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
@@ -94,21 +99,21 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           }}
         >
           {tab === 'home' && (
-            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.home}>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.home} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <HomePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} allStats={sharedProps.allStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'challenge' && (
-            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.challenge}>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.challenge} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
               </div>
             </PullToRefresh>
           )}
           {tab === 'profile' && (
-            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile}>
+            <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
                 <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
               </div>
@@ -283,6 +288,7 @@ export default function MainApp() {
             setAnswers={setAnswers}
             refreshStats={refreshStats}
             settings={settings}
+            refreshing={refreshing}
           />
         } />
       </Routes>

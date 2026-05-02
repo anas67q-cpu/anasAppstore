@@ -74,7 +74,6 @@
     -webkit-tap-highlight-color: transparent;
     overflow: hidden;
     height: 100dvh;
-    padding-top: var(--sat);
     /* iOS momentum scrolling */
     -webkit-overflow-scrolling: touch;
   }
@@ -100,6 +99,10 @@
     touch-action: manipulation;
   }
   .ui-no-select {
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  button, a, [role="button"] {
     user-select: none;
     -webkit-touch-callout: none;
   }

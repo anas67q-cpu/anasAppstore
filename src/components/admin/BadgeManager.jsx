@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Trash2, Award, Upload, Search, Tag, Users } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, Award, Upload, Search, Tag, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
@@ -52,7 +52,7 @@ export default function BadgeManager() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
-              <ArrowLeft className="w-5 h-5 text-foreground" />
+              <ArrowRight className="w-5 h-5 text-foreground" />
             </button>
             <h2 className="text-lg font-bold text-foreground">إدارة الشارات</h2>
           </div>

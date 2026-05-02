@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock } from 'lucide-react';
+import { ArrowRight, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
 import ImageManager from '@/components/admin/ImageManager';
@@ -58,7 +58,7 @@ function AdminHome() {
     <div className="px-4 py-4 space-y-5">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/home')} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowRight className="w-5 h-5 text-foreground" />
         </button>
         <div>
           <h2 className="text-xl font-bold text-foreground">لوحة التحكم</h2>
@@ -108,7 +108,7 @@ function AdminHome() {
                 <p className="font-bold text-foreground">{sec.label}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{sec.sub}</p>
               </div>
-              <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
             </motion.button>
           );
         })}

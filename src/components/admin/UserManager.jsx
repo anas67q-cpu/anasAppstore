@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Search, Pencil, Users, Star } from 'lucide-react';
+import { ArrowRight, Search, Pencil, Users, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
@@ -127,7 +127,7 @@ export default function UserManager() {
       <div className="px-4 py-4 space-y-4">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            <ArrowRight className="w-5 h-5 text-foreground" />
           </button>
           <h2 className="text-lg font-bold text-foreground">المشتركون ({stats.length})</h2>
         </div>

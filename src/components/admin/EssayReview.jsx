@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { ArrowRight, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 
@@ -99,7 +99,7 @@ export default function EssayReview() {
     <div className="px-4 py-4 space-y-4">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="رجوع">
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowRight className="w-5 h-5 text-foreground" />
         </button>
         <h2 className="text-lg font-bold text-foreground">تصحيح الأسئلة المقالية</h2>
       </div>
