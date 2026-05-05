@@ -151,6 +151,15 @@ export default function MainApp() {
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
+  // Register FCM device token when user logs in
+  useEffect(() => {
+    if (!user) return;
+    // Base44 native iOS app exposes the FCM token via window.__fcmToken
+    const token = window.__fcmToken;
+    if (!token) return;
+    base44.functions.invoke('registerDeviceToken', { token, platform: 'ios' }).catch(() => {});
+  }, [user?.email]);
+
   // Ensure user stats
   useEffect(() => {
     if (user && !stats && !ensuredStats && !loading) {

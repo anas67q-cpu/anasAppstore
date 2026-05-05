@@ -1,0 +1,37 @@
+{
+  "name": "DeviceToken",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "User email"
+    },
+    "token": {
+      "type": "string",
+      "description": "FCM device token"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "default": "ios",
+      "description": "Device platform"
+    },
+    "user_category": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "contestant"
+      ],
+      "default": "guest",
+      "description": "User category for targeted notifications"
+    }
+  },
+  "required": [
+    "user_email",
+    "token"
+  ]
+}
