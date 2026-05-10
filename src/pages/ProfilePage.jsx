@@ -14,7 +14,9 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const rank = allStats.findIndex(s => s.user_email === user?.email) + 1;
+  const userCategory = stats?.category || 'guest';
+  const sameCategory = allStats.filter(s => (s.category || 'guest') === userCategory);
+  const rank = sameCategory.findIndex(s => s.user_email === user?.email) + 1;
 
   useEffect(() => {
     fetchAllStats?.();
@@ -48,7 +50,7 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
             <p className="text-xs text-muted-foreground">مركزك في لوحة المتصدرين</p>
             <p className="text-2xl font-black text-foreground">
               {rank}
-              <span className="text-sm font-normal text-muted-foreground mr-1">من {allStats.length}</span>
+              <span className="text-sm font-normal text-muted-foreground mr-1">من {sameCategory.length}</span>
             </p>
           </div>
           <div className="mr-auto text-left">
