@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { base44 } from '@/api/base44Client';
@@ -14,42 +14,52 @@ const firebaseConfig = {
 
 const VAPID_KEY = "BMwCdWwzAvMaHaRrq7c4ccGJkjxoM2TRbgbBuduEBgxAITY1tn8ycrkGjy7Hcy5tXIThdp9sJrYj1xkAzMUaVm0";
 
+async function doRegister() {
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+  const swReg = await navigator.serviceWorker.ready;
+  const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+  if (!token) return;
+  await base44.functions.invoke('registerDeviceToken', { token, platform: 'web' });
+  onMessage(messaging, (payload) => {
+    const { title, body } = payload.notification || {};
+    if (title && Notification.permission === 'granted') {
+      new Notification(title, { body: body || '', dir: 'rtl', lang: 'ar', icon: '/icon-192.png' });
+    }
+  });
+}
+
 export function usePushNotifications(user) {
+  const [permissionStatus, setPermissionStatus] = useState(null); // 'default' | 'granted' | 'denied'
+
   useEffect(() => {
     if (!user) return;
-    // Skip if native iOS (handled via window.__fcmToken)
-    if (window.__fcmToken) return;
-    // Only for browsers that support service workers
+    if (window.__fcmToken) return; // native iOS
     if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
 
-    async function registerPWAPush() {
-      try {
-        // Request permission
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') return;
+    const current = Notification.permission;
+    setPermissionStatus(current);
 
-        const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
-
-        const swReg = await navigator.serviceWorker.ready;
-        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-        if (!token) return;
-
-        // Register token in backend
-        await base44.functions.invoke('registerDeviceToken', { token, platform: 'web' });
-
-        // Handle foreground messages (show a simple browser notification)
-        onMessage(messaging, (payload) => {
-          const { title, body } = payload.notification || {};
-          if (title && Notification.permission === 'granted') {
-            new Notification(title, { body: body || '', dir: 'rtl', lang: 'ar', icon: '/icon-192.png' });
-          }
-        });
-      } catch (e) {
-        console.error('PWA push registration error:', e);
-      }
+    // If already granted, register silently
+    if (current === 'granted') {
+      doRegister().catch(() => {});
     }
-
-    registerPWAPush();
   }, [user?.email]);
+
+  // Called from a button click (required by Safari)
+  const requestPermission = useCallback(async () => {
+    if (!('Notification' in window)) return;
+    const permission = await Notification.requestPermission();
+    setPermissionStatus(permission);
+    if (permission === 'granted') {
+      await doRegister().catch(() => {});
+    }
+  }, []);
+
+  const shouldShowPrompt =
+    permissionStatus === 'default' &&
+    'Notification' in window &&
+    !window.__fcmToken;
+
+  return { shouldShowPrompt, requestPermission };
 }
