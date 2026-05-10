@@ -54,10 +54,17 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const payload = await req.json();
 
-  // Called by entity automation when a question is published
   const question = payload.data;
+  const oldQuestion = payload.old_data;
+
+  // Skip if not published
   if (!question || question.status !== 'published') {
-    return Response.json({ skipped: true });
+    return Response.json({ skipped: true, reason: 'not published' });
+  }
+
+  // For updates: skip if status didn't change (already was published)
+  if (payload.event?.type === 'update' && oldQuestion?.status === 'published') {
+    return Response.json({ skipped: true, reason: 'already was published' });
   }
 
   const serviceAccount = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT_KEY'));
@@ -66,20 +73,58 @@ Deno.serve(async (req) => {
 
   const allTokens = await base44.asServiceRole.entities.DeviceToken.list();
 
-  // Target based on question's target_audience
+  // Filter tokens based on target_audience
+  const targetAudience = question.target_audience || 'all';
   let tokens = allTokens;
-  if (question.target_audience === 'contestants') {
+  if (targetAudience === 'contestants') {
     tokens = allTokens.filter(t => t.user_category === 'contestant');
-  } else if (question.target_audience === 'guests') {
+  } else if (targetAudience === 'guests') {
     tokens = allTokens.filter(t => t.user_category === 'guest');
-  } else if (question.target_audience === 'specific' && question.target_emails?.length) {
+  } else if (targetAudience === 'specific' && question.target_emails?.length) {
     tokens = allTokens.filter(t => question.target_emails.includes(t.user_email));
   }
 
-  const title = '📝 سؤال جديد!';
-  const body = `سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت!`;
+  // Personalise message per category
+  const buildMessage = (category) => {
+    const title = '📝 سؤال جديد وصلك!';
+    if (category === 'contestant') {
+      return {
+        title,
+        body: `أيها المتسابق! سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت وحصّل نقاطك! 🏆`,
+      };
+    } else if (category === 'guest') {
+      return {
+        title,
+        body: `يا ضيفنا! سؤال اليوم ${question.day_number} وصل. شارك وتحدَّ نفسك! ✨`,
+      };
+    } else {
+      return {
+        title,
+        body: `سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت!`,
+      };
+    }
+  };
 
-  await sendToTokens(tokens, title, body, projectId, accessToken);
+  // Group tokens by category and send personalised messages
+  const contestantTokens = tokens.filter(t => t.user_category === 'contestant');
+  const guestTokens = tokens.filter(t => t.user_category === 'guest');
+  const otherTokens = tokens.filter(t => !t.user_category || (t.user_category !== 'contestant' && t.user_category !== 'guest'));
 
-  return Response.json({ success: true, sent: tokens.length });
+  const sends = [];
+  if (contestantTokens.length > 0) {
+    const { title, body } = buildMessage('contestant');
+    sends.push(sendToTokens(contestantTokens, title, body, projectId, accessToken));
+  }
+  if (guestTokens.length > 0) {
+    const { title, body } = buildMessage('guest');
+    sends.push(sendToTokens(guestTokens, title, body, projectId, accessToken));
+  }
+  if (otherTokens.length > 0) {
+    const { title, body } = buildMessage('all');
+    sends.push(sendToTokens(otherTokens, title, body, projectId, accessToken));
+  }
+
+  await Promise.all(sends);
+
+  return Response.json({ success: true, sent: tokens.length, targetAudience });
 });

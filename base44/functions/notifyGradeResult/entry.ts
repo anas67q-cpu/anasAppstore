@@ -44,31 +44,41 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
   const payload = await req.json();
 
-  // Called by entity automation when an answer is graded
   const answer = payload.data;
   const oldAnswer = payload.old_data;
 
-  // Only trigger when graded changes from false to true
-  if (!answer || !answer.graded || oldAnswer?.graded === true) {
-    return Response.json({ skipped: true });
+  // Only trigger when graded transitions to true
+  if (!answer || answer.graded !== true) {
+    return Response.json({ skipped: true, reason: 'not graded' });
+  }
+
+  // Avoid re-sending if it was already graded before
+  if (oldAnswer && oldAnswer.graded === true) {
+    return Response.json({ skipped: true, reason: 'already was graded' });
+  }
+
+  // Find the user's stats to determine their category
+  const userStats = await base44.asServiceRole.entities.UserStats.filter({ user_email: answer.user_email });
+  const userCategory = userStats[0]?.category || 'guest';
+
+  // Find device tokens for this specific user
+  const tokens = await base44.asServiceRole.entities.DeviceToken.filter({ user_email: answer.user_email });
+
+  if (tokens.length === 0) {
+    return Response.json({ skipped: true, reason: 'no device token for user' });
   }
 
   const serviceAccount = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT_KEY'));
   const projectId = serviceAccount.project_id;
   const accessToken = await getAccessToken(serviceAccount);
 
-  // Find device tokens for this specific user
-  const tokens = await base44.asServiceRole.entities.DeviceToken.filter({ user_email: answer.user_email });
-
-  if (tokens.length === 0) {
-    return Response.json({ skipped: true, reason: 'No device token for user' });
-  }
-
   const isCorrect = answer.is_correct;
+  const categoryLabel = userCategory === 'contestant' ? 'أيها المتسابق' : 'يا ضيفنا';
+
   const title = isCorrect ? '🎉 إجابة صحيحة!' : '📋 تم تصحيح إجابتك';
   const body = isCorrect
-    ? `أحسنت! إجابتك على سؤال اليوم ${answer.day_number} صحيحة. حصلت على ${answer.points_earned} نقطة!`
-    : `تم تصحيح إجابتك على سؤال اليوم ${answer.day_number}. تفقد ملاحظة المصحح.`;
+    ? `أحسنت ${categoryLabel}! إجابتك على سؤال اليوم ${answer.day_number} صحيحة. حصلت على ${answer.points_earned} نقطة! 🏆`
+    : `${categoryLabel}، تم تصحيح إجابتك على سؤال اليوم ${answer.day_number}. تفقد ملاحظة المصحح في التطبيق.`;
 
   await Promise.allSettled(tokens.map(t =>
     fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
@@ -78,5 +88,5 @@ Deno.serve(async (req) => {
     })
   ));
 
-  return Response.json({ success: true, sent: tokens.length });
+  return Response.json({ success: true, sent: tokens.length, userCategory, isCorrect });
 });
