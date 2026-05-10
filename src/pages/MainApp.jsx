@@ -10,6 +10,7 @@ import NewBadgeModal from '@/components/NewBadgeModal';
 import useAppData from '@/lib/useAppData';
 import { useTheme } from '@/lib/useTheme';
 import { base44 } from '@/api/base44Client';
+import { usePushNotifications } from '@/lib/usePushNotifications';
 import { Settings, Sun, Moon, LogOut, RefreshCw } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
 
@@ -133,6 +134,7 @@ export default function MainApp() {
   } = useAppData();
 
   const displayName = stats?.user_name || user?.full_name || 'مرحباً';
+  usePushNotifications(user);
   const { theme, toggle: toggleTheme } = useTheme();
   const [ensuredStats, setEnsuredStats] = useState(false);
   const [newBadgeNotif, setNewBadgeNotif] = useState(null);

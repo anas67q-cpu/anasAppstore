@@ -1,42 +1,27 @@
-const CACHE_NAME = 'anas-app-images-v1';
-const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+// Firebase Messaging Service Worker
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-function isImageRequest(url) {
-  const u = new URL(url);
-  return IMAGE_EXTENSIONS.some(ext => u.pathname.toLowerCase().endsWith(ext))
-    || u.hostname.includes('supabase') // base44 storage
-    || u.pathname.includes('/storage/');
-}
-
-self.addEventListener('install', event => {
-  self.skipWaiting();
+firebase.initializeApp({
+  apiKey: "AIzaSyABoHr5N7TKcIpL3XkCIsvzHf1R7tyex6w",
+  authDomain: "anas-app-34f72.firebaseapp.com",
+  projectId: "anas-app-34f72",
+  storageBucket: "anas-app-34f72.firebasestorage.app",
+  messagingSenderId: "103518692676",
+  appId: "1:103518692676:web:4103b4102e56102be5e311"
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
-});
+const messaging = firebase.messaging();
 
-self.addEventListener('fetch', event => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  try {
-    if (!isImageRequest(req.url)) return;
-  } catch {
-    return;
-  }
-
-  event.respondWith(
-    caches.open(CACHE_NAME).then(async cache => {
-      const cached = await cache.match(req);
-      if (cached) return cached;
-
-      const response = await fetch(req);
-      if (response && response.status === 200) {
-        // Clone before consuming
-        cache.put(req, response.clone());
-      }
-      return response;
-    })
-  );
+// Handle background messages
+messaging.onBackgroundMessage((payload) => {
+  const { title, body } = payload.notification || {};
+  if (!title) return;
+  self.registration.showNotification(title, {
+    body: body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    dir: 'rtl',
+    lang: 'ar',
+  });
 });
