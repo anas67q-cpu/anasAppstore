@@ -76,6 +76,11 @@
     height: 100dvh;
     /* iOS momentum scrolling */
     -webkit-overflow-scrolling: touch;
+    /* Match status bar color on iOS PWA */
+    background-color: #046B67;
+  }
+  #root {
+    background-color: hsl(var(--background));
   }
   #root { 
     height: 100dvh; 

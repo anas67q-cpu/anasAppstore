@@ -243,7 +243,7 @@ export default function MainApp() {
       {!isAdminRoute && (
         <div
           className="flex items-center justify-between px-5 flex-shrink-0 ui-no-select"
-          style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, var(--sat, 0px))', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
+          style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
         >
           <div className="flex items-center gap-2">
             {isAdmin && (
