@@ -39,8 +39,12 @@ export function useShareBadge() {
     const file = new File([blob], `badge-${badgeName}.png`, { type: 'image/png' });
     const shareText = `🏆 حصلت على شارة "${badgeName}" من مسابقة أنس الرمضانية! 🎉`;
 
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: shareText, text: shareText }).catch(() => {});
+    if (navigator.share) {
+      // Use native share (includes iOS PWA bridge)
+      const shareData = navigator.canShare && navigator.canShare({ files: [file] })
+        ? { files: [file], title: shareText, text: shareText }
+        : { title: shareText, text: shareText };
+      await navigator.share(shareData).catch(() => {});
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

@@ -51,7 +51,7 @@ function PullToRefresh({ onRefresh, children, scrollRef, refreshing }) {
   return (
     <div ref={containerRef} className="h-full overflow-y-auto scroll-ios" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
       {showSpinner && (
-        <div className="flex justify-center pt-2 pb-1">
+        <div className="flex justify-center pt-4 pb-1">
           <motion.div
             animate={{ rotate: refreshing ? 360 : progress * 180, scale: refreshing ? 1 : 0.7 + progress * 0.3 }}
             transition={refreshing ? { repeat: Infinity, duration: 0.7, ease: 'linear' } : { duration: 0.1 }}
