@@ -42,44 +42,52 @@ async function getAccessToken(serviceAccount) {
 
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
+  const payload = await req.json();
+
+  const answer = payload.data;
+
+  // Only trigger on new answers (not updates/essay grading)
+  if (!answer || payload.event?.type !== 'create') {
+    return Response.json({ skipped: true, reason: 'not a new answer' });
+  }
+
+  const answererEmail = answer.user_email;
+  const answererName = answer.user_name || answererEmail;
+  const isCorrect = answer.is_correct;
+
+  // Find users who are watching this person and have notify_friends enabled
+  const allPrefs = await base44.asServiceRole.entities.NotificationPreferences.list();
+  const watchers = allPrefs.filter(p =>
+    p.notify_friends === true &&
+    (p.watched_emails || []).includes(answererEmail) &&
+    p.user_email !== answererEmail
+  );
+
+  if (watchers.length === 0) {
+    return Response.json({ skipped: true, reason: 'no watchers for this user' });
+  }
 
   const serviceAccount = JSON.parse(Deno.env.get('FCM_SERVICE_ACCOUNT_KEY'));
   const projectId = serviceAccount.project_id;
   const accessToken = await getAccessToken(serviceAccount);
 
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-  const questions = await base44.asServiceRole.entities.Question.filter({ status: 'published' });
-  const todayQuestion = questions.find(q => q.publish_date === today);
+  const title = isCorrect
+    ? `🎯 ${answererName} أجاب صح!`
+    : `❌ ${answererName} أجاب خطأ`;
+  const body = isCorrect
+    ? `${answererName} أجاب على سؤال اليوم بإجابة صحيحة! 🏆`
+    : `${answererName} أجاب على سؤال اليوم بإجابة خاطئة.`;
 
-  if (!todayQuestion) {
-    return Response.json({ skipped: true, reason: 'No published question for today' });
-  }
-
-  const answers = await base44.asServiceRole.entities.Answer.filter({ question_id: todayQuestion.id });
-  const answeredEmails = new Set(answers.map(a => a.user_email));
-
+  // Get device tokens for all watchers
+  const watcherEmails = watchers.map(w => w.user_email);
   const allTokens = await base44.asServiceRole.entities.DeviceToken.list();
+  const targetTokens = allTokens.filter(t => watcherEmails.includes(t.user_email));
 
-  // Respect user notification preferences
-  const allPrefs = await base44.asServiceRole.entities.NotificationPreferences.list();
-  const prefsMap = {};
-  allPrefs.forEach(p => { prefsMap[p.user_email] = p; });
-
-  const unansweredTokens = allTokens.filter(t => {
-    if (answeredEmails.has(t.user_email)) return false;
-    const p = prefsMap[t.user_email];
-    if (!p) return true; // default: ON
-    return p.notify_reminder !== false;
-  });
-
-  if (unansweredTokens.length === 0) {
-    return Response.json({ skipped: true, reason: 'All users have answered or opted out' });
+  if (targetTokens.length === 0) {
+    return Response.json({ skipped: true, reason: 'no device tokens for watchers' });
   }
 
-  const title = '⏰ تذكير - سؤال اليوم!';
-  const body = 'لم تجب على سؤال اليوم بعد. تبقى وقت قليل، أجب الآن!';
-
-  await Promise.allSettled(unansweredTokens.map(t =>
+  await Promise.allSettled(targetTokens.map(t =>
     fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -87,5 +95,5 @@ Deno.serve(async (req) => {
     })
   ));
 
-  return Response.json({ success: true, sent: unansweredTokens.length });
+  return Response.json({ success: true, sent: targetTokens.length, answerer: answererEmail });
 });

@@ -9,6 +9,7 @@ import BottomSheet from '@/components/BottomSheet';
 import { Trophy, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
+import NotificationSettings from '@/components/profile/NotificationSettings';
 
 export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -75,6 +76,8 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
       />
 
       <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} settings={settings} />
+
+      <NotificationSettings user={user} allStats={allStats} />
 
       <ComplaintsSection user={user} stats={stats} />
 

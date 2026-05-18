@@ -57,12 +57,10 @@ Deno.serve(async (req) => {
   const question = payload.data;
   const oldQuestion = payload.old_data;
 
-  // Skip if not published
   if (!question || question.status !== 'published') {
     return Response.json({ skipped: true, reason: 'not published' });
   }
 
-  // For updates: skip if status didn't change (already was published)
   if (payload.event?.type === 'update' && oldQuestion?.status === 'published') {
     return Response.json({ skipped: true, reason: 'already was published' });
   }
@@ -73,7 +71,6 @@ Deno.serve(async (req) => {
 
   const allTokens = await base44.asServiceRole.entities.DeviceToken.list();
 
-  // Filter tokens based on target_audience
   const targetAudience = question.target_audience || 'all';
   let tokens = allTokens;
   if (targetAudience === 'contestants') {
@@ -84,28 +81,27 @@ Deno.serve(async (req) => {
     tokens = allTokens.filter(t => question.target_emails.includes(t.user_email));
   }
 
-  // Personalise message per category
+  // Respect user notification preferences
+  const allPrefs = await base44.asServiceRole.entities.NotificationPreferences.list();
+  const prefsMap = {};
+  allPrefs.forEach(p => { prefsMap[p.user_email] = p; });
+  tokens = tokens.filter(t => {
+    const p = prefsMap[t.user_email];
+    if (!p) return true; // default: ON
+    return p.notify_new_question !== false;
+  });
+
   const buildMessage = (category) => {
     const title = '📝 سؤال جديد وصلك!';
     if (category === 'contestant') {
-      return {
-        title,
-        body: `أيها المتسابق! سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت وحصّل نقاطك! 🏆`,
-      };
+      return { title, body: `أيها المتسابق! سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت وحصّل نقاطك! 🏆` };
     } else if (category === 'guest') {
-      return {
-        title,
-        body: `يا ضيفنا! سؤال اليوم ${question.day_number} وصل. شارك وتحدَّ نفسك! ✨`,
-      };
+      return { title, body: `يا ضيفنا! سؤال اليوم ${question.day_number} وصل. شارك وتحدَّ نفسك! ✨` };
     } else {
-      return {
-        title,
-        body: `سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت!`,
-      };
+      return { title, body: `سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت!` };
     }
   };
 
-  // Group tokens by category and send personalised messages
   const contestantTokens = tokens.filter(t => t.user_category === 'contestant');
   const guestTokens = tokens.filter(t => t.user_category === 'guest');
   const otherTokens = tokens.filter(t => !t.user_category || (t.user_category !== 'contestant' && t.user_category !== 'guest'));

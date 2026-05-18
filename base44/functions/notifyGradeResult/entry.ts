@@ -47,21 +47,23 @@ Deno.serve(async (req) => {
   const answer = payload.data;
   const oldAnswer = payload.old_data;
 
-  // Only trigger when graded transitions to true
   if (!answer || answer.graded !== true) {
     return Response.json({ skipped: true, reason: 'not graded' });
   }
 
-  // Avoid re-sending if it was already graded before
   if (oldAnswer && oldAnswer.graded === true) {
     return Response.json({ skipped: true, reason: 'already was graded' });
   }
 
-  // Find the user's stats to determine their category
+  // Respect user notification preference
+  const userPrefs = await base44.asServiceRole.entities.NotificationPreferences.filter({ user_email: answer.user_email });
+  if (userPrefs[0] && userPrefs[0].notify_grade === false) {
+    return Response.json({ skipped: true, reason: 'user opted out of grade notifications' });
+  }
+
   const userStats = await base44.asServiceRole.entities.UserStats.filter({ user_email: answer.user_email });
   const userCategory = userStats[0]?.category || 'guest';
 
-  // Find device tokens for this specific user
   const tokens = await base44.asServiceRole.entities.DeviceToken.filter({ user_email: answer.user_email });
 
   if (tokens.length === 0) {
