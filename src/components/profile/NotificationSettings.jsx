@@ -10,7 +10,7 @@ const PREFS_ITEMS = [
     icon: MessageSquare,
     color: '#046B67',
     title: 'سؤال جديد',
-    description: 'يصلك تنبيه فور نشر سؤال جديد لتكون أول المجيبين وتحصل على أعلى النقاط.',
+    description: 'يصلك تنبيه فور نشر سؤال جديد حتى لا تفوتك الفرصة.',
   },
   {
     key: 'notify_reminder',

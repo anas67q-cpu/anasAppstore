@@ -91,36 +91,15 @@ Deno.serve(async (req) => {
     return p.notify_new_question !== false;
   });
 
-  const buildMessage = (category) => {
-    const title = '📝 سؤال جديد وصلك!';
-    if (category === 'contestant') {
-      return { title, body: `أيها المتسابق! سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت وحصّل نقاطك! 🏆` };
-    } else if (category === 'guest') {
-      return { title, body: `يا ضيفنا! سؤال اليوم ${question.day_number} وصل. شارك وتحدَّ نفسك! ✨` };
-    } else {
-      return { title, body: `سؤال اليوم ${question.day_number} متاح الآن. أجب قبل انتهاء الوقت!` };
-    }
+  const buildMessage = () => {
+    return {
+      title: '📝 سؤال جديد!',
+      body: `ترا وصل سؤال اليوم ${question.day_number}، بالتوفيق! 🌟`,
+    };
   };
 
-  const contestantTokens = tokens.filter(t => t.user_category === 'contestant');
-  const guestTokens = tokens.filter(t => t.user_category === 'guest');
-  const otherTokens = tokens.filter(t => !t.user_category || (t.user_category !== 'contestant' && t.user_category !== 'guest'));
-
-  const sends = [];
-  if (contestantTokens.length > 0) {
-    const { title, body } = buildMessage('contestant');
-    sends.push(sendToTokens(contestantTokens, title, body, projectId, accessToken));
-  }
-  if (guestTokens.length > 0) {
-    const { title, body } = buildMessage('guest');
-    sends.push(sendToTokens(guestTokens, title, body, projectId, accessToken));
-  }
-  if (otherTokens.length > 0) {
-    const { title, body } = buildMessage('all');
-    sends.push(sendToTokens(otherTokens, title, body, projectId, accessToken));
-  }
-
-  await Promise.all(sends);
+  const { title, body } = buildMessage();
+  await sendToTokens(tokens, title, body, projectId, accessToken);
 
   return Response.json({ success: true, sent: tokens.length, targetAudience });
 });

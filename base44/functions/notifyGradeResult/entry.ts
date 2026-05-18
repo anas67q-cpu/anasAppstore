@@ -74,13 +74,8 @@ Deno.serve(async (req) => {
   const projectId = serviceAccount.project_id;
   const accessToken = await getAccessToken(serviceAccount);
 
-  const isCorrect = answer.is_correct;
-  const categoryLabel = userCategory === 'contestant' ? 'أيها المتسابق' : 'يا ضيفنا';
-
-  const title = isCorrect ? '🎉 إجابة صحيحة!' : '📋 تم تصحيح إجابتك';
-  const body = isCorrect
-    ? `أحسنت ${categoryLabel}! إجابتك على سؤال اليوم ${answer.day_number} صحيحة. حصلت على ${answer.points_earned} نقطة! 🏆`
-    : `${categoryLabel}، تم تصحيح إجابتك على سؤال اليوم ${answer.day_number}. تفقد ملاحظة المصحح في التطبيق.`;
+  const title = '📋 تم التصحيح!';
+  const body = `ترا سؤال رقم ${answer.day_number} صححته الإدارة 👀`;
 
   await Promise.allSettled(tokens.map(t =>
     fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
