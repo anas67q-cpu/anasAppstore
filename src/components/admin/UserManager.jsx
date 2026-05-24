@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Search, Pencil, Users, Star } from 'lucide-react';
+import { ArrowRight, Search, Pencil, Star, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import BottomSheet from '@/components/BottomSheet';
@@ -23,6 +23,8 @@ export default function UserManager() {
   const [editing, setEditing] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(null); // user stat record to delete
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -51,6 +53,30 @@ export default function UserManager() {
       total_wrong: s.total_wrong || 0,
       total_missed: s.total_missed || 0,
     });
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleting) return;
+    setSaving(true);
+    // Delete UserStats
+    await base44.entities.UserStats.delete(deleting.id).catch(() => {});
+    // Delete all answers for this user
+    const answers = await base44.entities.Answer.filter({ user_email: deleting.user_email }).catch(() => []);
+    await Promise.all(answers.map(a => base44.entities.Answer.delete(a.id).catch(() => {})));
+    // Delete user badges
+    const badges = await base44.entities.UserBadge.filter({ user_email: deleting.user_email }).catch(() => []);
+    await Promise.all(badges.map(b => base44.entities.UserBadge.delete(b.id).catch(() => {})));
+    // Delete device tokens
+    const tokens = await base44.entities.DeviceToken.filter({ user_email: deleting.user_email }).catch(() => []);
+    await Promise.all(tokens.map(t => base44.entities.DeviceToken.delete(t.id).catch(() => {})));
+    // Delete notification preferences
+    const prefs = await base44.entities.NotificationPreferences.filter({ user_email: deleting.user_email }).catch(() => []);
+    await Promise.all(prefs.map(p => base44.entities.NotificationPreferences.delete(p.id).catch(() => {})));
+
+    setStats(prev => prev.filter(s => s.id !== deleting.id));
+    setDeleting(null);
+    setConfirmDelete(false);
+    setSaving(false);
   };
 
   const handleSave = async () => {
@@ -118,6 +144,10 @@ export default function UserManager() {
         <button onClick={() => handleEdit(s)} className="p-2 rounded-xl bg-secondary tap-scale" aria-label="تعديل">
           <Pencil className="w-4 h-4 text-muted-foreground" />
         </button>
+        <button onClick={() => { playTap(); setDeleting(s); setConfirmDelete(true); }}
+          className="p-2 rounded-xl tap-scale" style={{ background: '#ef444415' }} aria-label="حذف">
+          <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+        </button>
       </div>
     </motion.div>
   );
@@ -180,6 +210,34 @@ export default function UserManager() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation */}
+      <BottomSheet open={confirmDelete} onClose={() => { setConfirmDelete(false); setDeleting(null); }} title="حذف حساب">
+        {deleting && (
+          <div className="space-y-4 text-center">
+            <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: '#ef444415' }}>
+              <Trash2 className="w-8 h-8" style={{ color: '#ef4444' }} />
+            </div>
+            <div>
+              <p className="font-bold text-foreground text-lg">هل أنت متأكد؟</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                سيتم حذف جميع بيانات <span className="font-bold text-foreground">{deleting.user_name || deleting.user_email}</span> بشكل نهائي (الإجابات، النقاط، الشارات...) ولا يمكن التراجع.
+              </p>
+            </div>
+            <div className="space-y-2 pt-2">
+              <button onClick={handleDeleteUser} disabled={saving}
+                className="w-full py-3.5 rounded-2xl font-bold text-white tap-scale disabled:opacity-50"
+                style={{ background: '#ef4444' }}>
+                {saving ? 'جاري الحذف...' : 'نعم، احذف الحساب'}
+              </button>
+              <button onClick={() => { setConfirmDelete(false); setDeleting(null); }}
+                className="w-full py-3.5 rounded-2xl font-bold tap-scale bg-secondary text-foreground">
+                إلغاء
+              </button>
+            </div>
+          </div>
+        )}
+      </BottomSheet>
 
       <BottomSheet open={!!editing} onClose={() => setEditing(null)} title={editing?.user_name || 'تعديل'}>
         {editing && (
