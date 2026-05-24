@@ -91,15 +91,19 @@ Deno.serve(async (req) => {
     return p.notify_new_question !== false;
   });
 
-  const buildMessage = () => {
-    return {
-      title: '📝 سؤال جديد!',
-      body: `ترا وصل سؤال اليوم ${question.day_number}، بالتوفيق! 🌟`,
-    };
-  };
+  // Deduplicate: one token per user (pick the latest one)
+  const seenEmails = new Set();
+  const uniqueTokens = [];
+  for (const t of tokens) {
+    if (!seenEmails.has(t.user_email)) {
+      seenEmails.add(t.user_email);
+      uniqueTokens.push(t);
+    }
+  }
 
-  const { title, body } = buildMessage();
-  await sendToTokens(tokens, title, body, projectId, accessToken);
+  const title = '📝 سؤال جديد!';
+  const body = `ترا وصل سؤال اليوم ${question.day_number}، بالتوفيق! 🌟`;
+  await sendToTokens(uniqueTokens, title, body, projectId, accessToken);
 
-  return Response.json({ success: true, sent: tokens.length, targetAudience });
+  return Response.json({ success: true, sent: uniqueTokens.length, targetAudience });
 });

@@ -65,12 +65,22 @@ Deno.serve(async (req) => {
   const prefsMap = {};
   allPrefs.forEach(p => { prefsMap[p.user_email] = p; });
 
-  const unansweredTokens = allTokens.filter(t => {
+  const filteredTokens = allTokens.filter(t => {
     if (answeredEmails.has(t.user_email)) return false;
     const p = prefsMap[t.user_email];
     if (!p) return true; // default: ON
     return p.notify_reminder !== false;
   });
+
+  // Deduplicate: one token per user
+  const seenEmails = new Set();
+  const unansweredTokens = [];
+  for (const t of filteredTokens) {
+    if (!seenEmails.has(t.user_email)) {
+      seenEmails.add(t.user_email);
+      unansweredTokens.push(t);
+    }
+  }
 
   if (unansweredTokens.length === 0) {
     return Response.json({ skipped: true, reason: 'All users have answered or opted out' });

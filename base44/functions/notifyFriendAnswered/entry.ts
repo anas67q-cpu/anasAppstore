@@ -78,10 +78,17 @@ Deno.serve(async (req) => {
     ? `${answererName} أجاب على سؤال اليوم بإجابة صحيحة! 🏆`
     : `${answererName} أجاب على سؤال اليوم بإجابة خاطئة.`;
 
-  // Get device tokens for all watchers
-  const watcherEmails = watchers.map(w => w.user_email);
+  // Get device tokens for all watchers — one token per user to avoid duplicate notifications
+  const watcherEmails = new Set(watchers.map(w => w.user_email));
   const allTokens = await base44.asServiceRole.entities.DeviceToken.list();
-  const targetTokens = allTokens.filter(t => watcherEmails.includes(t.user_email));
+  const seenEmails = new Set();
+  const targetTokens = [];
+  for (const t of allTokens) {
+    if (watcherEmails.has(t.user_email) && !seenEmails.has(t.user_email)) {
+      seenEmails.add(t.user_email);
+      targetTokens.push(t);
+    }
+  }
 
   if (targetTokens.length === 0) {
     return Response.json({ skipped: true, reason: 'no device tokens for watchers' });

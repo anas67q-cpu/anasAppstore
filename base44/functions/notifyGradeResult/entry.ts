@@ -64,7 +64,9 @@ Deno.serve(async (req) => {
   const userStats = await base44.asServiceRole.entities.UserStats.filter({ user_email: answer.user_email });
   const userCategory = userStats[0]?.category || 'guest';
 
-  const tokens = await base44.asServiceRole.entities.DeviceToken.filter({ user_email: answer.user_email });
+  const allUserTokens = await base44.asServiceRole.entities.DeviceToken.filter({ user_email: answer.user_email });
+  // Deduplicate: one token per user
+  const tokens = allUserTokens.slice(0, 1);
 
   if (tokens.length === 0) {
     return Response.json({ skipped: true, reason: 'no device token for user' });
