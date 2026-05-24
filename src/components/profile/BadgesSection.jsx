@@ -4,6 +4,7 @@ import { Award, Share2 } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import { useShareBadge } from '@/lib/useShareBadge';
+import LazyImage from '@/components/ui/LazyImage';
 
 export default function BadgesSection({ allBadges = [], userBadges = [], allUserBadges = [], cardTemplateUrl, userName = '' }) {
   const [selected, setSelected] = useState(null);
@@ -38,10 +39,10 @@ export default function BadgesSection({ allBadges = [], userBadges = [], allUser
                   className="flex flex-col items-center gap-1.5 tap-scale"
                   style={{ opacity: earned ? 1 : 0.35 }}
                 >
-                  <div className="w-16 h-16 overflow-hidden"
-                    style={{ filter: earned ? 'none' : 'grayscale(100%)', borderRadius: 0 }}>
+                  <div className="w-16 h-16"
+                    style={{ filter: earned ? 'none' : 'grayscale(100%)' }}>
                     {badge.icon_url
-                      ? <img src={badge.icon_url} alt={badge.name} className="w-full h-full object-cover" />
+                      ? <LazyImage src={badge.icon_url} alt={badge.name} className="w-16 h-16" />
                       : <div className="w-full h-full flex items-center justify-center rounded-2xl"
                           style={{ background: badge.color || 'hsl(var(--primary))' }}>
                           <Award className="w-8 h-8 text-white" />

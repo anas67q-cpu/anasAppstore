@@ -7,10 +7,21 @@ const cache = {
   user: null, stats: null, questions: null, answers: null,
   allStats: null, settings: null, userBadges: null, allBadges: null, allUserBadges: null, lastFetch: {},
 };
-const CACHE_TTL = 30000;
+// TTL per data type (ms)
+const TTL = {
+  user:         60 * 60 * 1000, // 1 hour  — rarely changes
+  stats:        30 * 1000,      // 30s     — changes after answer
+  questions:    5  * 60 * 1000, // 5 min   — admin adds rarely
+  answers:      30 * 1000,      // 30s
+  allStats:     60 * 1000,      // 1 min   — leaderboard
+  settings:     10 * 60 * 1000, // 10 min  — very rarely changes
+  userBadges:   2  * 60 * 1000, // 2 min
+  allBadges:    10 * 60 * 1000, // 10 min
+  allUserBadges:2  * 60 * 1000, // 2 min
+};
 
 function shouldRefetch(key) {
-  return Date.now() - (cache.lastFetch[key] || 0) > CACHE_TTL;
+  return Date.now() - (cache.lastFetch[key] || 0) > (TTL[key] ?? 30000);
 }
 
 export default function useAppData() {

@@ -4,6 +4,7 @@ import { Award, Share2 } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import { useShareBadge } from '@/lib/useShareBadge';
+import LazyImage from '@/components/ui/LazyImage';
 
 export default function BadgesStrip({ userBadges = [], allBadges = [], allUserBadges = [], cardTemplateUrl, userName = '' }) {
   const [selected, setSelected] = useState(null);
@@ -23,7 +24,7 @@ export default function BadgesStrip({ userBadges = [], allBadges = [], allUserBa
               className="flex-shrink-0 tap-scale"
             >
               {iconUrl
-                ? <img src={iconUrl} alt={ub.badge_name} className="w-16 h-16 object-cover" style={{ borderRadius: 0 }} />
+                ? <LazyImage src={iconUrl} alt={ub.badge_name} className="w-16 h-16" />
                 : <div className="w-16 h-16 flex items-center justify-center"
                     style={{ background: ub.badge_color || badgeDef?.color || 'hsl(var(--primary))', borderRadius: 16 }}>
                     <Award className="w-8 h-8 text-white" />
