@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, Sparkles } from 'lucide-react';
 import Lottie from 'lottie-react';
+import CompetitionCountdown from './CompetitionCountdown';
 
 const EMOJI_LOADING_URL = 'https://media.base44.com/files/public/69daa39f99dd53afa074a17a/20fb7618b_Emojiloading.json';
 let emojiLoadingCache = null;
@@ -206,12 +207,40 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
 
   const typeMap = { multiple_choice: 'اختيار من متعدد', true_false: 'صح أو خطأ', essay: 'مقالي' };
 
+  const [competitionStartDate, setCompetitionStartDate] = useState(undefined);
+  const [countdownDone, setCountdownDone] = useState(false);
+
+  useEffect(() => {
+    base44.entities.AppSettings.list().then(list => {
+      const rec = list.find(s => s.competition_start_date);
+      if (rec?.competition_start_date) {
+        const target = new Date(rec.competition_start_date);
+        if (target > new Date()) {
+          setCompetitionStartDate(rec.competition_start_date);
+        } else {
+          setCompetitionStartDate(null);
+        }
+      } else {
+        setCompetitionStartDate(null);
+      }
+    });
+  }, []);
+
   // Waiting
   if (phase === 'waiting' || phase === 'init') {
+    // Show countdown if competition hasn't started yet
+    if (competitionStartDate !== undefined && competitionStartDate !== null && !countdownDone) {
+      return (
+        <CompetitionCountdown
+          targetDate={competitionStartDate}
+          onExpired={() => setCountdownDone(true)}
+        />
+      );
+    }
+
     // Check if we're within 30 minutes AFTER 9:30pm (question imminent)
     const riyadhNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
     const h = riyadhNow.getHours(), mn = riyadhNow.getMinutes();
-    const isImminentWindow = (h === 21 && mn >= 30) || (h === 22 && mn < 0); // 9:30-10:00pm
     const justPassed930 = h === 21 && mn >= 30 && mn < 60;
 
     if (justPassed930) {

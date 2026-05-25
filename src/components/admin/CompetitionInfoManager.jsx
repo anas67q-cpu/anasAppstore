@@ -7,6 +7,7 @@ export default function CompetitionInfoManager() {
   const navigate = useNavigate();
   const [description, setDescription] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [settingId, setSettingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -20,12 +21,13 @@ export default function CompetitionInfoManager() {
       setSettingId(all[0].id);
       setDescription(all[0].competition_description || '');
       setLogoUrl(all[0].competition_logo || '');
+      setStartDate(all[0].competition_start_date || '');
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
-    const data = { key: 'info', competition_description: description, competition_logo: logoUrl };
+    const data = { key: 'info', competition_description: description, competition_logo: logoUrl, competition_start_date: startDate || null };
     if (settingId) {
       await base44.entities.AppSettings.update(settingId, data);
     } else {
@@ -71,6 +73,18 @@ export default function CompetitionInfoManager() {
             <input type="file" accept="image/*" className="hidden"
               onChange={e => e.target.files[0] && handleUpload(e.target.files[0])} />
           </label>
+        </div>
+
+        {/* Competition Start Date */}
+        <div>
+          <p className="text-sm font-bold text-foreground mb-2">📅 تاريخ بداية المسابقة (للعداد التنازلي)</p>
+          <input
+            type="datetime-local"
+            value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className={ic}
+          />
+          <p className="text-xs text-muted-foreground mt-1.5">سيظهر العداد التنازلي في خانة السؤال اليومي حتى هذا الموعد</p>
         </div>
 
         {/* Description */}
