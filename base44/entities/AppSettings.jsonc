@@ -30,6 +30,10 @@
       "type": "string",
       "description": "Competition logo URL"
     },
+    "competition_rules_url": {
+      "type": "string",
+      "description": "Competition rules PDF or external link URL"
+    },
     "card_template": {
       "type": "string",
       "description": "Shared card background template URL"

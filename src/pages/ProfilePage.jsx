@@ -10,8 +10,9 @@ import { Trophy, Trash2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 import NotificationSettings from '@/components/profile/NotificationSettings';
+import CompetitionRulesCard from '@/components/profile/CompetitionRulesCard';
 
-export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] }) {
+export default function ProfilePage({ user, stats, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] , rulesUrl }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -76,6 +77,8 @@ export default function ProfilePage({ user, stats, allStats, userBadges, allBadg
       />
 
       <LeaderboardSection allStats={allStats} currentUserEmail={user?.email} settings={settings} />
+
+      <CompetitionRulesCard rulesUrl={rulesUrl} />
 
       <NotificationSettings user={user} allStats={allStats} />
 

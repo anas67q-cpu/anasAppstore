@@ -7,6 +7,7 @@ import ChallengePage from '@/pages/ChallengePage';
 import ProfilePage from '@/pages/ProfilePage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import NewBadgeModal from '@/components/NewBadgeModal';
+import TermsModal from '@/components/profile/TermsModal';
 import useAppData from '@/lib/useAppData';
 import { useTheme } from '@/lib/useTheme';
 import { base44 } from '@/api/base44Client';
@@ -66,7 +67,7 @@ function PullToRefresh({ onRefresh, children, scrollRef, refreshing }) {
 }
 
 // Shell that keeps all tabs mounted (preserves scroll + state)
-function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing }) {
+function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing, rulesUrl }) {
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
@@ -117,7 +118,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           {tab === 'profile' && (
             <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-                <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} />
+                <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} rulesUrl={rulesUrl} />
               </div>
             </PullToRefresh>
           )}
@@ -213,6 +214,8 @@ export default function MainApp() {
   const cardTemplateUrl = imageSettings.card_template;
   const streakLogoUrl = imageSettings.streak_logo;
   const userName = stats?.user_name || user?.full_name || '';
+  const infoSettings = settingsObj['info'] || settings?.find(s => s.competition_rules_url) || {};
+  const rulesUrl = infoSettings.competition_rules_url || null;
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -238,6 +241,7 @@ export default function MainApp() {
   return (
     <div className="h-full flex flex-col bg-background">
       <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
+      {user && <TermsModal rulesUrl={rulesUrl} />}
 
       {/* Header — hidden on admin routes */}
       {!isAdminRoute && (
@@ -306,6 +310,7 @@ export default function MainApp() {
             refreshStats={refreshStats}
             settings={settings}
             refreshing={refreshing}
+            rulesUrl={rulesUrl}
           />
         } />
       </Routes>
