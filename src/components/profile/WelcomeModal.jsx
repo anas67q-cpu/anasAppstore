@@ -1,17 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from 'lottie-react';
-import welcomeAnimation from '@/lib/welcome-animation.json';
 
 export default function WelcomeModal({ userName, show, onClose }) {
+  const [animationData, setAnimationData] = useState(null);
+  const [animationLoaded, setAnimationLoaded] = useState(false);
+
   useEffect(() => {
-    if (show) {
+    if (show && !animationLoaded) {
+      // Load animation dynamically for faster rendering
+      fetch('/welcome-animation.json')
+        .then(res => res.json())
+        .then(data => {
+          setAnimationData(data);
+          setAnimationLoaded(true);
+        })
+        .catch(err => {
+          console.error('Animation load error:', err);
+          setAnimationLoaded(true); // Still close even if animation fails
+        });
+    }
+  }, [show, animationLoaded]);
+
+  useEffect(() => {
+    if (show && animationLoaded) {
       const timer = setTimeout(() => {
         onClose();
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [show, onClose]);
+  }, [show, animationLoaded, onClose]);
 
   return (
     <AnimatePresence>
@@ -34,9 +52,15 @@ export default function WelcomeModal({ userName, show, onClose }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Lottie Animation */}
-            <div className="w-32 h-32 mx-auto mb-6">
-              <Lottie animationData={welcomeAnimation} loop={true} />
-            </div>
+            {animationData && (
+              <div className="w-32 h-32 mx-auto mb-6">
+                <Lottie 
+                  animationData={animationData} 
+                  loop={true}
+                  rendererSettings={{ preserveAspectRatio: 'xMidYMid slice' }}
+                />
+              </div>
+            )}
 
             <h2 className="text-2xl font-black text-foreground mb-4">
               أهلاً بك يا {userName}! 👋
