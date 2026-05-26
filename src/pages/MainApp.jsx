@@ -8,6 +8,7 @@ import ProfilePage from '@/pages/ProfilePage';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import NewBadgeModal from '@/components/NewBadgeModal';
 import TermsModal from '@/components/profile/TermsModal';
+import WelcomeModal from '@/components/profile/WelcomeModal';
 import useAppData from '@/lib/useAppData';
 import { useTheme } from '@/lib/useTheme';
 import { base44 } from '@/api/base44Client';
@@ -141,6 +142,7 @@ export default function MainApp() {
   const [ensuredStats, setEnsuredStats] = useState(false);
   const [newBadgeNotif, setNewBadgeNotif] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -241,7 +243,8 @@ export default function MainApp() {
   return (
     <div className="h-full flex flex-col bg-background">
       <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
-      {user && <TermsModal rulesUrl={rulesUrl} />}
+      {user && <TermsModal rulesUrl={rulesUrl} onAcceptTerms={() => setShowWelcome(true)} />}
+      <WelcomeModal userName={displayName} show={showWelcome} onClose={() => setShowWelcome(false)} />
 
       {/* Header — hidden on admin routes */}
       {!isAdminRoute && (

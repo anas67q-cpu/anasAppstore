@@ -4,7 +4,7 @@ import { FileText, ExternalLink, CheckSquare, Square, X } from 'lucide-react';
 
 const STORAGE_KEY = 'terms_accepted_v1';
 
-export default function TermsModal({ rulesUrl }) {
+export default function TermsModal({ rulesUrl, onAcceptTerms }) {
   const [visible, setVisible] = useState(false);
   const [checked, setChecked] = useState(false);
 
@@ -18,6 +18,7 @@ export default function TermsModal({ rulesUrl }) {
   const handleAccept = () => {
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
+    onAcceptTerms?.();
   };
 
   const handleOpenRules = () => {
