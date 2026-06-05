@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { preloadImages } from '@/lib/imageCache';
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
@@ -82,6 +83,8 @@ export default function useAppData() {
     const s = await base44.entities.AppSettings.list();
     cache.settings = s; cache.lastFetch.settings = Date.now();
     if (mounted.current) setSettings(s);
+    // Pre-cache competition logo and card template persistently
+    preloadImages(s.flatMap(r => [r.competition_logo, r.card_template, r.streak_logo, r.leaderboard_shield, r.quick_challenge_image, r.memory_challenge_image]));
     return s;
   }, []);
 
@@ -98,6 +101,8 @@ export default function useAppData() {
     const b = await base44.entities.Badge.list('-created_date', 100);
     cache.allBadges = b; cache.lastFetch.allBadges = Date.now();
     if (mounted.current) setAllBadges(b);
+    // Pre-cache all badge images persistently
+    preloadImages(b.map(badge => badge.icon_url));
     return b;
   }, []);
 
