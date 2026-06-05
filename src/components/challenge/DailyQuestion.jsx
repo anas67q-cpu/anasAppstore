@@ -6,6 +6,13 @@ import CompetitionCountdown from './CompetitionCountdown';
 
 const EMOJI_LOADING_URL = 'https://media.base44.com/files/public/69daa39f99dd53afa074a17a/20fb7618b_Emojiloading.json';
 let emojiLoadingCache = null;
+
+const LAUNCH_ANIM_URL = 'https://media.base44.com/files/public/69daa39f99dd53afa074a17a/5c33f6776_.json';
+let launchAnimCache = null;
+const launchAnimPromise = fetch(LAUNCH_ANIM_URL)
+  .then(r => r.json())
+  .then(data => { launchAnimCache = data; return data; })
+  .catch(() => null);
 import { base44 } from '@/api/base44Client';
 import { playCorrect, playWrong, playTap } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
@@ -45,8 +52,16 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const [pendingAnswer, setPendingAnswer] = useState(null); // selected but not yet submitted
   const [essayText, setEssayText] = useState('');
   const [essaySent, setEssaySent] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [launchAnimData, setLaunchAnimData] = useState(launchAnimCache);
   const timerRef = useRef(null);
   const isAdmin = user?.email === ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (!launchAnimCache) {
+      launchAnimPromise.then(data => { if (data) setLaunchAnimData(data); });
+    }
+  }, []);
 
   // Show all published questions — sorted by day_number ascending
   const todayQs = questions.filter(q => q.is_published)
@@ -102,13 +117,21 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     return () => clearInterval(timerRef.current);
   }, [phase]);
 
-  const startAnswering = () => {
-    playTap();
+  const doStartAnswering = () => {
     if (todayQ) {
       localStorage.setItem(getOpenedKey(todayQ.id, user.email), '1');
       localStorage.setItem(getOpenedKey(todayQ.id, user.email) + '_time', Date.now().toString());
     }
     setPhase('answering');
+  };
+
+  const startAnswering = () => {
+    playTap();
+    if (launchAnimData) {
+      setLaunching(true);
+    } else {
+      doStartAnswering();
+    }
   };
 
   const handleTimeout = async () => {
@@ -267,29 +290,39 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   // Preview - one time only
   if (phase === 'preview') {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="card-surface shadow-card overflow-hidden">
-        <div className="p-5" style={{ background: 'hsl(var(--primary))' }}>
-          <p className="text-white/80 text-xs">اليوم {todayQ?.day_number}</p>
-          <h2 className="text-white text-xl font-bold mt-1">السؤال وصل! 📩</h2>
-          <p className="text-white/70 text-sm mt-1">لديك {todayQ?.time_limit || 90} ثانية للإجابة</p>
-        </div>
-        <div className="p-5 space-y-4">
-          <div className="p-3.5 rounded-xl bg-secondary/70 text-center">
-            <p className="text-xs text-muted-foreground">⚠️ بمجرد الضغط على "ابدأ" سيبدأ العداد التنازلي ولا يمكن التراجع</p>
+      <>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="card-surface shadow-card overflow-hidden">
+          <div className="p-5" style={{ background: 'hsl(var(--primary))' }}>
+            <p className="text-white/80 text-xs">اليوم {todayQ?.day_number}</p>
+            <h2 className="text-white text-xl font-bold mt-1">السؤال وصل! 📩</h2>
+            <p className="text-white/70 text-sm mt-1">لديك {todayQ?.time_limit || 90} ثانية للإجابة</p>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <InfoBox label="النوع" value={typeMap[todayQ?.type] || '—'} />
-            <InfoBox label="الوقت" value={`${todayQ?.time_limit || 90}ث`} />
-            <InfoBox label="النقاط" value={isAdmin ? '—' : (todayQ?.points || getPointsForDay(todayQ?.day_number || 1))} accent />
+          <div className="p-5 space-y-4">
+            <div className="p-3.5 rounded-xl bg-secondary/70 text-center">
+              <p className="text-xs text-muted-foreground">⚠️ بمجرد الضغط على "ابدأ" سيبدأ العداد التنازلي ولا يمكن التراجع</p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <InfoBox label="النوع" value={typeMap[todayQ?.type] || '—'} />
+              <InfoBox label="الوقت" value={`${todayQ?.time_limit || 90}ث`} />
+              <InfoBox label="النقاط" value={isAdmin ? '—' : (todayQ?.points || getPointsForDay(todayQ?.day_number || 1))} accent />
+            </div>
+            <motion.button whileTap={{ scale: 0.97 }} onClick={startAnswering}
+              className="w-full py-4 rounded-2xl font-bold text-white text-base"
+              style={{ background: 'hsl(var(--primary))' }}>
+              ابدأ الإجابة
+            </motion.button>
           </div>
-          <motion.button whileTap={{ scale: 0.97 }} onClick={startAnswering}
-            className="w-full py-4 rounded-2xl font-bold text-white text-base"
-            style={{ background: 'hsl(var(--primary))' }}>
-            ابدأ الإجابة
-          </motion.button>
-        </div>
-      </motion.div>
+        </motion.div>
+        <AnimatePresence>
+          {launching && launchAnimData && (
+            <LaunchOverlay
+              animationData={launchAnimData}
+              onComplete={() => { setLaunching(false); doStartAnswering(); }}
+            />
+          )}
+        </AnimatePresence>
+      </>
     );
   }
 
@@ -532,6 +565,35 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
       </motion.div>
 
     </div>
+  );
+}
+
+function LaunchOverlay({ animationData, onComplete }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-[9998] flex items-center justify-center"
+      style={{ background: 'rgba(2,8,16,0.97)', backdropFilter: 'blur(20px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', damping: 16, stiffness: 260, delay: 0.08 }}
+        style={{ width: '90vw', maxWidth: 420 }}
+      >
+        <Lottie
+          animationData={animationData}
+          loop={false}
+          autoplay={true}
+          onComplete={onComplete}
+          style={{ width: '100%', height: 'auto' }}
+          rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+        />
+      </motion.div>
+    </motion.div>
   );
 }
 
