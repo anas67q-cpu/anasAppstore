@@ -63,14 +63,6 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
     }
   }, []);
 
-  // Pre-load question image as soon as we know the question URL
-  useEffect(() => {
-    if (todayQ?.image_url) {
-      const img = new Image();
-      img.src = todayQ.image_url;
-    }
-  }, [todayQ?.image_url]);
-
   // Show all published questions — sorted by day_number ascending
   const todayQs = questions.filter(q => q.is_published)
     .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
@@ -79,6 +71,14 @@ export default function DailyQuestion({ questions, answers, user, stats, setStat
   const firstUnanswered = todayQs.find(q => !answers.find(a => a.question_id === q.id));
   const todayQ = firstUnanswered || todayQs[todayQs.length - 1] || null;
   const todayA = todayQ ? answers.find(a => a.question_id === todayQ.id) : null;
+
+  // Pre-load question image as soon as we know the question URL
+  useEffect(() => {
+    if (todayQ?.image_url) {
+      const img = new Image();
+      img.src = todayQ.image_url;
+    }
+  }, [todayQ?.image_url]);
 
   // Determine initial phase
   useEffect(() => {
