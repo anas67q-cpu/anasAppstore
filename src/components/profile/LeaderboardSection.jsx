@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, ChevronLeft } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
+import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
 
 const PODIUM_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -29,28 +30,9 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
     return (
       <motion.div
         initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="card-surface shadow-card p-6"
+        className="card-surface shadow-card overflow-hidden"
       >
-        <h3 className="text-base font-bold text-foreground mb-4">لوحة المتصدرين</h3>
-        <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center py-6 gap-4"
-          >
-            <motion.div
-              animate={{ rotate: [0, -6, 6, -6, 0], scale: [1, 1.08, 1] }}
-              transition={{ repeat: Infinity, duration: 2.5 }}
-              className="text-6xl select-none"
-            >
-              🔒
-            </motion.div>
-            <div className="text-center">
-              <p className="font-black text-lg text-foreground">مغلقة مؤقتاً!</p>
-              <p className="text-sm text-muted-foreground mt-1">ترقبوا النتائج قريباً 🎯</p>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+        <LeaderboardLockedBanner />
       </motion.div>
     );
   }
@@ -166,12 +148,7 @@ function FullLeaderboard({ contestants, guests, currentUserEmail, isHidden, onSe
   const MEDALS = ['🥇', '🥈', '🥉'];
 
   if (isHidden) {
-    return (
-      <div className="flex flex-col items-center py-10 gap-4">
-        <motion.div animate={{ rotate: [0, -8, 8, -8, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="text-6xl">🔒</motion.div>
-        <p className="text-center font-bold text-foreground">مغلقة مؤقتاً</p>
-      </div>
-    );
+    return <LeaderboardLockedBanner compact />;
   }
 
   return (

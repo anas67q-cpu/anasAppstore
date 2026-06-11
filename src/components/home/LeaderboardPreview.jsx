@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trophy, ChevronLeft } from 'lucide-react';
 import BottomSheet from '@/components/BottomSheet';
 import LeaderboardFull from '@/components/home/LeaderboardFull';
+import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
 import { playTap } from '@/lib/sounds';
 
 const medals = ['🥇', '🥈', '🥉'];
@@ -10,6 +11,22 @@ const medals = ['🥇', '🥈', '🥉'];
 export default function LeaderboardPreview({ allStats = [], settings = [] }) {
   const [showFull, setShowFull] = useState(false);
   const top3 = allStats.slice(0, 3);
+
+  const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
+  const isHidden = hiddenSetting?.leaderboard_hidden === true;
+
+  if (isHidden) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.35 }}
+        className="card-surface shadow-card overflow-hidden rounded-2xl"
+      >
+        <LeaderboardLockedBanner />
+      </motion.div>
+    );
+  }
 
   return (
     <>

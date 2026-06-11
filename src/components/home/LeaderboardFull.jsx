@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import BottomSheet from '@/components/BottomSheet';
 import { playTap } from '@/lib/sounds';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Lock } from 'lucide-react';
+import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
 
 const medals = ['🥇', '🥈', '🥉'];
 
@@ -23,41 +23,7 @@ export default function LeaderboardFull({ allStats = [], settings = [], currentU
   const displayList = activeTab === 'contestants' ? contestants : guests;
 
   if (isHidden) {
-    return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center justify-center py-12 gap-5"
-        >
-          <motion.div
-            animate={{ rotate: [0, -8, 8, -8, 0], scale: [1, 1.1, 1] }}
-            transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
-            className="text-8xl select-none"
-          >
-            🔒
-          </motion.div>
-          <div className="text-center space-y-2">
-            <p className="text-xl font-black text-foreground">لوحة الصدارة مغلقة!</p>
-            <p className="text-sm text-muted-foreground px-6 text-center leading-relaxed">
-              تم إغلاق لوحة الصدارة مؤقتاً لزيادة الإثارة والحماس في هذه المرحلة 🎯
-            </p>
-          </div>
-          <div className="flex gap-2 flex-wrap justify-center">
-            {['🏆', '🥇', '🎯', '⚡', '🔥'].map((emoji, i) => (
-              <motion.span
-                key={i}
-                animate={{ y: [0, -8, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2, ease: 'easeInOut' }}
-                className="text-2xl"
-              >
-                {emoji}
-              </motion.span>
-            ))}
-          </div>
-        </motion.div>
-      </AnimatePresence>
-    );
+    return <LeaderboardLockedBanner compact />;
   }
 
   return (
