@@ -10,10 +10,11 @@ const tabs = [
   { id: 'profile', icon: UserCircle },
 ];
 
-export default function TabBar({ activeTab, onTabChange }) {
+export default function TabBar({ activeTab, onTabChange, hidden }) {
   return (
     <div
       className="fixed bottom-0 inset-x-0 z-50 flex justify-center ui-no-select"
+      style={{ display: hidden ? 'none' : undefined }}
       style={{ paddingBottom: 'calc(12px + var(--sab, 0px))' }}
     >
       <div

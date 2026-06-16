@@ -72,6 +72,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
+  const [roundOpen, setRoundOpen] = useState(false);
 
   const activeTab = TAB_ORDER.find(t => location.pathname.startsWith(`/${t}`)) || 'home';
 
@@ -112,7 +113,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           {tab === 'challenge' && (
             <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.challenge} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-                <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
+                <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} onRoundOpen={setRoundOpen} />
               </div>
             </PullToRefresh>
           )}
@@ -125,7 +126,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           )}
         </div>
       ))}
-      <TabBar activeTab={activeTab} onTabChange={handleTabChange} />
+      <TabBar activeTab={activeTab} onTabChange={handleTabChange} hidden={roundOpen} />
     </div>
   );
 }

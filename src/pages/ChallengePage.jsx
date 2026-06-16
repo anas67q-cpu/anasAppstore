@@ -5,8 +5,11 @@ import { motion } from 'framer-motion';
 import { Play, Trophy, Clock, Star } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
 
-export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats }) {
+export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats, onRoundOpen }) {
   const [showRound, setShowRound] = useState(false);
+
+  const openRound = () => { playTap(); setShowRound(true); onRoundOpen?.(true); };
+  const closeRound = () => { setShowRound(false); onRoundOpen?.(false); };
   const userCategory = stats?.category || 'guest';
   const userEmail = user?.email || '';
 
@@ -26,12 +29,40 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
 
   return (
     <div className="space-y-5 pb-6">
+      <h2 className="text-xl font-bold text-foreground">
+        سؤال اليوم{publishedQs.length > 1 ? ` (${publishedQs.length} أسئلة)` : ''}
+      </h2>
+      {publishedQs.length > 1 ? (
+        publishedQs.map(q => (
+          <DailyQuestion
+            key={q.id}
+            questions={[q]}
+            answers={answers}
+            user={user}
+            stats={stats}
+            setStats={setStats}
+            setAnswers={setAnswers}
+            refreshStats={refreshStats}
+          />
+        ))
+      ) : (
+        <DailyQuestion
+          questions={visibleQs}
+          answers={answers}
+          user={user}
+          stats={stats}
+          setStats={setStats}
+          setAnswers={setAnswers}
+          refreshStats={refreshStats}
+        />
+      )}
+
       {/* Round Card */}
       <motion.button
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         whileTap={{ scale: 0.97 }}
-        onClick={() => { playTap(); setShowRound(true); }}
+        onClick={openRound}
         className="w-full rounded-3xl overflow-hidden shadow-card tap-scale text-right relative"
         style={{ background: 'linear-gradient(135deg, #046B67 0%, #065f5b 60%, #0a4f4c 100%)' }}
       >
@@ -73,38 +104,10 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
 
       <RoundModal
         open={showRound}
-        onClose={() => setShowRound(false)}
+        onClose={closeRound}
         user={user}
         userName={userName}
       />
-
-      <h2 className="text-xl font-bold text-foreground">
-        سؤال اليوم{publishedQs.length > 1 ? ` (${publishedQs.length} أسئلة)` : ''}
-      </h2>
-      {publishedQs.length > 1 ? (
-        publishedQs.map(q => (
-          <DailyQuestion
-            key={q.id}
-            questions={[q]}
-            answers={answers}
-            user={user}
-            stats={stats}
-            setStats={setStats}
-            setAnswers={setAnswers}
-            refreshStats={refreshStats}
-          />
-        ))
-      ) : (
-        <DailyQuestion
-          questions={visibleQs}
-          answers={answers}
-          user={user}
-          stats={stats}
-          setStats={setStats}
-          setAnswers={setAnswers}
-          refreshStats={refreshStats}
-        />
-      )}
     </div>
   );
 }
