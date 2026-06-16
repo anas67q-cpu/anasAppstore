@@ -68,11 +68,13 @@ function PullToRefresh({ onRefresh, children, scrollRef, refreshing }) {
 }
 
 // Shell that keeps all tabs mounted (preserves scroll + state)
-function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing, rulesUrl }) {
+function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing, rulesUrl, onRoundOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
   const [roundOpen, setRoundOpen] = useState(false);
+
+  const handleRoundOpen = (val) => { setRoundOpen(val); onRoundOpen?.(val); };
 
   const activeTab = TAB_ORDER.find(t => location.pathname.startsWith(`/${t}`)) || 'home';
 
@@ -113,7 +115,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           {tab === 'challenge' && (
             <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.challenge} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-                <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} onRoundOpen={setRoundOpen} />
+                <ChallengePage {...sharedProps} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} onRoundOpen={handleRoundOpen} />
               </div>
             </PullToRefresh>
           )}
@@ -127,6 +129,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
         </div>
       ))}
       <TabBar activeTab={activeTab} onTabChange={handleTabChange} hidden={roundOpen} />
+
     </div>
   );
 }
@@ -144,6 +147,7 @@ export default function MainApp() {
   const [newBadgeNotif, setNewBadgeNotif] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [roundOpen, setRoundOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -247,8 +251,8 @@ export default function MainApp() {
       {user && <TermsModal rulesUrl={rulesUrl} onAcceptTerms={() => setShowWelcome(true)} />}
       <WelcomeModal userName={displayName} show={showWelcome} onClose={() => setShowWelcome(false)} />
 
-      {/* Header — hidden on admin routes */}
-      {!isAdminRoute && (
+      {/* Header — hidden on admin routes and when round is open */}
+      {!isAdminRoute && !roundOpen && (
         <div
           className="flex items-center justify-between px-5 flex-shrink-0 ui-no-select"
           style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: '18px', borderRadius: '0 0 28px 28px' }}
@@ -315,6 +319,7 @@ export default function MainApp() {
             settings={settings}
             refreshing={refreshing}
             rulesUrl={rulesUrl}
+            onRoundOpen={setRoundOpen}
           />
         } />
       </Routes>
