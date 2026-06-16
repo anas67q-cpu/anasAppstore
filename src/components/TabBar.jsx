@@ -13,9 +13,8 @@ const tabs = [
 export default function TabBar({ activeTab, onTabChange, hidden }) {
   return (
     <div
-      className="fixed bottom-0 inset-x-0 z-50 flex justify-center ui-no-select"
-      style={{ display: hidden ? 'none' : undefined }}
-      style={{ paddingBottom: 'calc(12px + var(--sab, 0px))' }}
+      className="fixed bottom-0 inset-x-0 z-50 flex justify-center ui-no-select transition-all duration-200"
+      style={{ paddingBottom: 'calc(12px + var(--sab, 0px))', opacity: hidden ? 0 : 1, pointerEvents: hidden ? 'none' : 'auto', transform: hidden ? 'translateY(100%)' : 'translateY(0)' }}
     >
       <div
         className="flex items-center gap-1 px-4 py-2 rounded-full shadow-card"

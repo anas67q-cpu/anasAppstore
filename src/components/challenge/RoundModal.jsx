@@ -313,7 +313,7 @@ export default function RoundModal({ open, onClose, user, userName }) {
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-          className="fixed inset-0 z-[200] flex flex-col bg-background"
+          className="fixed inset-0 z-[9999] flex flex-col bg-background"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           {phase === 'results' ? (
