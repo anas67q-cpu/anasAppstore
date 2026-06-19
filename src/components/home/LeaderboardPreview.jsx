@@ -1,15 +1,13 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, ChevronLeft } from 'lucide-react';
-import BottomSheet from '@/components/BottomSheet';
-import LeaderboardFull from '@/components/home/LeaderboardFull';
+import { useNavigate } from 'react-router-dom';
 import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
 import { playTap } from '@/lib/sounds';
 
 const medals = ['🥇', '🥈', '🥉'];
 
 export default function LeaderboardPreview({ allStats = [], settings = [] }) {
-  const [showFull, setShowFull] = useState(false);
+  const navigate = useNavigate();
   const top3 = allStats.slice(0, 3);
 
   const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
@@ -42,7 +40,7 @@ export default function LeaderboardPreview({ allStats = [], settings = [] }) {
             <h3 className="text-sm font-semibold text-muted-foreground">المتصدرين</h3>
           </div>
           <button
-            onClick={() => { playTap(); setShowFull(true); }}
+            onClick={() => { playTap(); navigate('/leaderboard'); }}
             className="flex items-center gap-1 text-xs text-primary font-medium tap-scale"
           >
             المزيد
@@ -73,9 +71,6 @@ export default function LeaderboardPreview({ allStats = [], settings = [] }) {
         )}
       </motion.div>
 
-      <BottomSheet open={showFull} onClose={() => setShowFull(false)} title="لوحة المتصدرين">
-        <LeaderboardFull allStats={allStats} settings={settings} />
-      </BottomSheet>
     </>
   );
 }

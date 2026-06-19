@@ -16,6 +16,8 @@ import { usePushNotifications } from '@/lib/usePushNotifications';
 import PushNotificationBanner from '@/components/PushNotificationBanner';
 import { Settings, Sun, Moon, LogOut, RefreshCw } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
+import LeaderboardPage from '@/pages/LeaderboardPage';
+import TourPage from '@/pages/TourPage';
 
 const TAB_ORDER = ['home', 'challenge', 'profile'];
 
@@ -74,7 +76,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
   const [roundOpen, setRoundOpen] = useState(false);
 
-  const handleRoundOpen = (val) => { setRoundOpen(val); onRoundOpen?.(val); };
+  const handleRoundOpen = (val) => { setRoundOpen(val); };
 
   const activeTab = TAB_ORDER.find(t => location.pathname.startsWith(`/${t}`)) || 'home';
 
@@ -134,7 +136,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
   );
 }
 
-export default function MainApp() {
+export default function MainApp({ overlayPage }) {
   const {
     user, stats, questions, answers, allStats, settings, userBadges, allBadges, allUserBadges, loading,
     refreshStats, fetchAllStats, updateUserName, setStats, setAnswers,
@@ -247,6 +249,12 @@ export default function MainApp() {
 
   return (
     <div className="h-full flex flex-col bg-background">
+      {overlayPage === 'leaderboard' && (
+        <LeaderboardPage user={user} allStats={allStats} answers={answers} settings={settings} />
+      )}
+      {overlayPage === 'tour' && (
+        <TourPage user={user} userName={userName} />
+      )}
       <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
       {user && <TermsModal rulesUrl={rulesUrl} onAcceptTerms={() => setShowWelcome(true)} />}
       <WelcomeModal userName={displayName} show={showWelcome} onClose={() => setShowWelcome(false)} />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Trophy, ChevronLeft } from 'lucide-react';
-import BottomSheet from '@/components/BottomSheet';
+import { useNavigate } from 'react-router-dom';
 import { playTap } from '@/lib/sounds';
 import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
 
@@ -9,8 +9,7 @@ const PODIUM_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function LeaderboardSection({ allStats = [], currentUserEmail, settings = [] }) {
-  const [showFull, setShowFull] = useState(false);
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('contestants');
 
   const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
@@ -45,7 +44,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-foreground">لوحة المتصدرين</h3>
-          <button onClick={() => { playTap(); setShowFull(true); }}
+          <button onClick={() => { playTap(); navigate('/leaderboard'); }}
             className="flex items-center gap-1 text-xs font-medium tap-scale"
             style={{ color: 'hsl(var(--primary))' }}>
             المزيد <ChevronLeft className="w-3.5 h-3.5" />
@@ -77,7 +76,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
             {/* 2nd */}
             {top3[1] && (
               <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                onClick={() => { playTap(); setSelectedPlayer(top3[1]); }}
+                onClick={() => { playTap(); }}
                 className="flex flex-col items-center gap-1 tap-scale">
                 <span className="text-2xl">🥈</span>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-card"
@@ -91,7 +90,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
             {/* 1st */}
             {top3[0] && (
               <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                onClick={() => { playTap(); setSelectedPlayer(top3[0]); }}
+                onClick={() => { playTap(); }}
                 className="flex flex-col items-center gap-1 tap-scale">
                 <span className="text-2xl">🥇</span>
                 <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-card"
@@ -107,7 +106,7 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
             {/* 3rd */}
             {top3[2] && (
               <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                onClick={() => { playTap(); setSelectedPlayer(top3[2]); }}
+                onClick={() => { playTap(); }}
                 className="flex flex-col items-center gap-1 tap-scale">
                 <span className="text-2xl">🥉</span>
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-card"
@@ -122,21 +121,6 @@ export default function LeaderboardSection({ allStats = [], currentUserEmail, se
         )}
       </motion.div>
 
-      {/* Full Leaderboard Sheet */}
-      <BottomSheet open={showFull} onClose={() => setShowFull(false)} title="لوحة المتصدرين">
-        <FullLeaderboard
-          contestants={contestants}
-          guests={guests}
-          currentUserEmail={currentUserEmail}
-          isHidden={isHidden}
-          onSelectPlayer={setSelectedPlayer}
-        />
-      </BottomSheet>
-
-      {/* Player detail Sheet */}
-      <BottomSheet open={!!selectedPlayer} onClose={() => setSelectedPlayer(null)} title={selectedPlayer?.user_name || 'مشترك'}>
-        {selectedPlayer && <PlayerDetail player={selectedPlayer} />}
-      </BottomSheet>
     </>
   );
 }

@@ -6,6 +6,8 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import MainApp from './pages/MainApp';
+import LeaderboardPage from './pages/LeaderboardPage';
+import TourPage from './pages/TourPage';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -34,6 +36,8 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
+      <Route path="/leaderboard" element={<MainApp overlayPage="leaderboard" />} />
+      <Route path="/tour" element={<MainApp overlayPage="tour" />} />
       <Route path="/*" element={<MainApp />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

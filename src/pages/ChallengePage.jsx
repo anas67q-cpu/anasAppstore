@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import DailyQuestion from '@/components/challenge/DailyQuestion';
-import RoundModal from '@/components/challenge/RoundModal';
 import { motion } from 'framer-motion';
-import { Play, Trophy, Clock, Star } from 'lucide-react';
+import { Play, Clock, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { playTap } from '@/lib/sounds';
 
 export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats, onRoundOpen }) {
-  const [showRound, setShowRound] = useState(false);
-
-  const openRound = () => { playTap(); setShowRound(true); onRoundOpen?.(true); };
-  const closeRound = () => { setShowRound(false); onRoundOpen?.(false); };
+  const navigate = useNavigate();
   const userCategory = stats?.category || 'guest';
   const userEmail = user?.email || '';
 
@@ -62,7 +59,7 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         whileTap={{ scale: 0.97 }}
-        onClick={openRound}
+        onClick={() => { playTap(); navigate('/tour'); }}
         className="w-full rounded-3xl overflow-hidden shadow-card tap-scale text-right relative"
         style={{ background: 'linear-gradient(135deg, #046B67 0%, #065f5b 60%, #0a4f4c 100%)' }}
       >
@@ -88,9 +85,7 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
               <span className="flex items-center gap-1 text-white/80 text-xs">
                 <Star className="w-3.5 h-3.5" /> 10 أسئلة
               </span>
-              <span className="flex items-center gap-1 text-white/80 text-xs">
-                <Trophy className="w-3.5 h-3.5" /> ليدربورد خاص
-              </span>
+              <span className="text-white/80 text-xs">🎯 محاولة واحدة تُحسب</span>
             </div>
           </div>
           <div
@@ -102,12 +97,7 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
         </div>
       </motion.button>
 
-      <RoundModal
-        open={showRound}
-        onClose={closeRound}
-        user={user}
-        userName={userName}
-      />
+
     </div>
   );
 }
