@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import DailyQuestion from '@/components/challenge/DailyQuestion';
 import { motion } from 'framer-motion';
-import { Play, Clock, Star } from 'lucide-react';
+import { Play, Clock, Star, ChevronLeft, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { playTap } from '@/lib/sounds';
 
@@ -21,37 +19,59 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
   });
 
   const publishedQs = visibleQs.sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
+  const answeredIds = new Set((answers || []).map(a => a.question_id));
+  const unansweredCount = publishedQs.filter(q => !answeredIds.has(q.id)).length;
+  const totalAnswered = publishedQs.length - unansweredCount;
 
-  const userName = stats?.user_name || user?.full_name || '';
+  // For the question card preview: first unanswered or last
+  const firstUnanswered = publishedQs.find(q => !answeredIds.has(q.id));
+  const activeQ = firstUnanswered || publishedQs[publishedQs.length - 1] || null;
+  const activeA = activeQ ? (answers || []).find(a => a.question_id === activeQ.id) : null;
 
   return (
     <div className="space-y-5 pb-6">
       <h2 className="text-xl font-bold text-foreground">
         سؤال اليوم{publishedQs.length > 1 ? ` (${publishedQs.length} أسئلة)` : ''}
       </h2>
-      {publishedQs.length > 1 ? (
-        publishedQs.map(q => (
-          <DailyQuestion
-            key={q.id}
-            questions={[q]}
-            answers={answers}
-            user={user}
-            stats={stats}
-            setStats={setStats}
-            setAnswers={setAnswers}
-            refreshStats={refreshStats}
-          />
-        ))
+
+      {/* Question card — taps to full-screen page */}
+      {publishedQs.length === 0 ? (
+        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+          className="card-surface shadow-card p-8 text-center space-y-3">
+          <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
+          <p className="font-bold text-foreground">في انتظار السؤال</p>
+          <p className="text-sm text-muted-foreground">يصدر السؤال كل يوم الساعة ٩:٣٠ مساءً</p>
+        </motion.div>
       ) : (
-        <DailyQuestion
-          questions={visibleQs}
-          answers={answers}
-          user={user}
-          stats={stats}
-          setStats={setStats}
-          setAnswers={setAnswers}
-          refreshStats={refreshStats}
-        />
+        <motion.button initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { playTap(); navigate('/question'); }}
+          className="w-full card-surface shadow-card overflow-hidden text-right tap-scale">
+          <div className="p-5" style={{ background: activeA ? (activeA.is_correct ? '#046B6715' : '#ef444415') : 'hsl(var(--primary))' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {activeA
+                  ? (activeA.is_correct
+                    ? <CheckCircle2 className="w-5 h-5" style={{ color: '#046B67' }} />
+                    : <XCircle className="w-5 h-5" style={{ color: '#ef4444' }} />)
+                  : null
+                }
+                <p className={`text-sm font-bold ${activeA ? '' : 'text-white/80'}`}
+                  style={activeA ? { color: activeA.is_correct ? '#046B67' : '#ef4444' } : {}}>
+                  {activeA ? (activeA.is_correct ? 'أحسنت! إجابة صحيحة' : (activeA.user_answer ? 'إجابة خاطئة' : 'انتهى الوقت')) : `اليوم ${activeQ?.day_number}`}
+                </p>
+              </div>
+              <ChevronLeft className={`w-5 h-5 ${activeA ? 'text-muted-foreground' : 'text-white'}`} />
+            </div>
+            {!activeA && <h2 className="text-white text-xl font-bold mt-1">السؤال وصل! 📩</h2>}
+            {!activeA && <p className="text-white/70 text-sm mt-0.5">اضغط للإجابة</p>}
+            {publishedQs.length > 1 && (
+              <p className={`text-xs mt-1 ${activeA ? 'text-muted-foreground' : 'text-white/70'}`}>
+                {totalAnswered}/{publishedQs.length} أسئلة مجاب عليها
+              </p>
+            )}
+          </div>
+        </motion.button>
       )}
 
       {/* Round Card */}

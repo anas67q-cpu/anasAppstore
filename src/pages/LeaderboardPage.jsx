@@ -101,7 +101,7 @@ function Podium({ top3, currentUserEmail }) {
 
 export default function LeaderboardPage({ user, allStats = [], answers = [], settings = [] }) {
   const navigate = useNavigate();
-  const [period, setPeriod] = useState('all');
+  const [period, setPeriod] = useState('week');
   const [category, setCategory] = useState('contestants');
 
   const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
@@ -122,7 +122,6 @@ export default function LeaderboardPage({ user, allStats = [], answers = [], set
 
     if (period === 'week') {
       const cycleStart = getWeeklyCycleStart();
-      // Use answers to compute weekly points
       const weeklyPoints = {};
       (answers || []).forEach(a => {
         if (!a.is_correct) return;
@@ -132,21 +131,6 @@ export default function LeaderboardPage({ user, allStats = [], answers = [], set
       });
       return assignRanks(
         base.map(s => ({ ...s, points: weeklyPoints[s.user_email] || 0 }))
-          .sort((a, b) => b.points - a.points)
-      );
-    }
-
-    if (period === 'today') {
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-      const todayPoints = {};
-      (answers || []).forEach(a => {
-        if (!a.is_correct) return;
-        const dateStr = new Date(a.created_date).toLocaleDateString('en-CA', { timeZone: 'Asia/Riyadh' });
-        if (dateStr !== todayStr) return;
-        todayPoints[a.user_email] = (todayPoints[a.user_email] || 0) + (a.points_earned || 1);
-      });
-      return assignRanks(
-        base.map(s => ({ ...s, points: todayPoints[s.user_email] || 0 }))
           .sort((a, b) => b.points - a.points)
       );
     }
@@ -185,7 +169,6 @@ export default function LeaderboardPage({ user, allStats = [], answers = [], set
           <div className="px-4 pt-4">
             <div className="flex gap-1 p-1 rounded-2xl bg-secondary">
               {[
-                { id: 'today', label: 'اليوم' },
                 { id: 'week', label: 'الأسبوع' },
                 { id: 'all', label: 'الكل' },
               ].map(tab => (

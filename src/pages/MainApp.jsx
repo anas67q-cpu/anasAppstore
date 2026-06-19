@@ -18,6 +18,7 @@ import { Settings, Sun, Moon, LogOut, RefreshCw } from 'lucide-react';
 import { playTap } from '@/lib/sounds';
 import LeaderboardPage from '@/pages/LeaderboardPage';
 import TourPage from '@/pages/TourPage';
+import QuestionPage from '@/pages/QuestionPage';
 
 const TAB_ORDER = ['home', 'challenge', 'profile'];
 
@@ -254,6 +255,9 @@ export default function MainApp({ overlayPage }) {
       )}
       {overlayPage === 'tour' && (
         <TourPage user={user} userName={userName} />
+      )}
+      {overlayPage === 'question' && (
+        <QuestionPage user={user} stats={stats} questions={questions} answers={answers} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
       )}
       <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
       {user && <TermsModal rulesUrl={rulesUrl} onAcceptTerms={() => setShowWelcome(true)} />}
