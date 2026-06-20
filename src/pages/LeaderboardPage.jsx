@@ -99,10 +99,48 @@ function Podium({ top3, currentUserEmail }) {
   );
 }
 
-export default function LeaderboardPage({ user, allStats = [], answers = [], settings = [] }) {
+export default function LeaderboardPage({ user, allStats: propAllStats = [], answers: propAnswers = [], settings: propSettings = [] }) {
   const navigate = useNavigate();
   const [period, setPeriod] = useState('week');
   const [category, setCategory] = useState('contestants');
+  const [allStats, setAllStats] = useState(propAllStats);
+  const [answers, setAnswers] = useState(propAnswers);
+  const [settings, setSettings] = useState(propSettings);
+  const [loading, setLoading] = useState(true);
+
+  // Always fetch fresh data on mount
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      const [stats, ans, setts] = await Promise.all([
+        base44.entities.UserStats.list(),
+        base44.entities.Answer.list(),
+        base44.entities.AppSettings.list(),
+      ]);
+      if (!cancelled) {
+        setAllStats(stats);
+        setAnswers(ans);
+        setSettings(setts);
+        setLoading(false);
+      }
+    };
+    load();
+
+    // Subscribe to real-time updates on answers and stats
+    const unsubAnswers = base44.entities.Answer.subscribe(() => {
+      base44.entities.Answer.list().then(ans => { if (!cancelled) setAnswers(ans); });
+    });
+    const unsubStats = base44.entities.UserStats.subscribe(() => {
+      base44.entities.UserStats.list().then(stats => { if (!cancelled) setAllStats(stats); });
+    });
+
+    return () => {
+      cancelled = true;
+      unsubAnswers();
+      unsubStats();
+    };
+  }, []);
 
   const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
   const isHidden = hiddenSetting?.leaderboard_hidden === true;
@@ -159,7 +197,12 @@ export default function LeaderboardPage({ user, allStats = [], answers = [], set
         <div className="w-9" />
       </div>
 
-      {isHidden ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
+        </div>
+      ) : isHidden ? (
         <div className="flex-1 overflow-y-auto scroll-ios px-4 pt-6">
           <LeaderboardLockedBanner />
         </div>
