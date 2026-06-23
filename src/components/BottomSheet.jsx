@@ -128,6 +128,7 @@ export default function BottomSheet({ open, onClose, children, title }) {
             <div
               className="flex-1 overflow-y-auto scroll-ios px-6 pb-6"
               style={{ overscrollBehaviorY: 'contain' }}
+              onTouchStart={(e) => e.stopPropagation()}
             >
               {children}
             </div>

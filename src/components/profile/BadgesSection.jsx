@@ -132,7 +132,13 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
             </div>
           )}
 
-          <button onClick={() => shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl)} disabled={sharing}
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => {
+              const badgeObj = { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color };
+              shareCard(badge.name, userName, badgeObj, cardTemplateUrl);
+            }}
+            disabled={sharing}
             className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: 'hsl(var(--primary))' }}>
             {sharing
