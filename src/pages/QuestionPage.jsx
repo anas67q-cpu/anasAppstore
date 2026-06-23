@@ -460,7 +460,13 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
 
         {(phase === 'waiting' || phase === 'init') && (
           <>
-            {competitionStartDate !== undefined && competitionStartDate !== null && !countdownDone ? (
+            {/* Wait until competitionStartDate is loaded before deciding what to show */}
+            {competitionStartDate === undefined ? (
+              <div className="flex justify-center pt-20">
+                <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin"
+                  style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
+              </div>
+            ) : competitionStartDate !== null && !countdownDone ? (
               <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => { setCountdownDone(true); setCompetitionStartDate(null); }} />
             ) : justPassed930 ? (
               <ComingSoonScreen />
