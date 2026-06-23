@@ -1,11 +1,29 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Clock, Star, ChevronLeft, CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { playTap } from '@/lib/sounds';
+import { base44 } from '@/api/base44Client';
+import CompetitionCountdown from '@/components/challenge/CompetitionCountdown';
 
 export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats, onRoundOpen }) {
   const navigate = useNavigate();
   const userCategory = stats?.category || 'guest';
+  const [competitionStartDate, setCompetitionStartDate] = useState(undefined);
+
+  useEffect(() => {
+    base44.entities.AppSettings.list().then(list => {
+      const rec = list.find(s => s.competition_start_date);
+      if (rec?.competition_start_date) {
+        const raw = rec.competition_start_date;
+        const localDateStr = raw.includes('T') ? raw : raw + 'T00:00:00';
+        const target = new Date(localDateStr);
+        setCompetitionStartDate(target > new Date() ? localDateStr : null);
+      } else {
+        setCompetitionStartDate(null);
+      }
+    });
+  }, []);
   const userEmail = user?.email || '';
 
   const visibleQs = (questions || []).filter(q => {
@@ -36,12 +54,21 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
 
       {/* Question card — taps to full-screen page */}
       {publishedQs.length === 0 ? (
-        <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-          className="card-surface shadow-card p-8 text-center space-y-3">
-          <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
-          <p className="font-bold text-foreground">في انتظار السؤال</p>
-          <p className="text-sm text-muted-foreground">يصدر السؤال كل يوم الساعة ٩:٣٠ مساءً</p>
-        </motion.div>
+        competitionStartDate === undefined ? (
+          <div className="flex justify-center py-10">
+            <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
+          </div>
+        ) : competitionStartDate !== null ? (
+          <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => setCompetitionStartDate(null)} />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
+            className="card-surface shadow-card p-8 text-center space-y-3">
+            <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
+            <p className="font-bold text-foreground">في انتظار السؤال</p>
+            <p className="text-sm text-muted-foreground">يصدر السؤال كل يوم الساعة ٩:٣٠ مساءً</p>
+          </motion.div>
+        )
       ) : (
         <motion.button initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
           whileTap={{ scale: 0.98 }}
