@@ -32,9 +32,6 @@ export default function BottomSheet({ open, onClose, children, title }) {
   };
 
   const onTouchStart = (e) => {
-    // Don't initiate drag if touching an interactive element
-    const tag = e.target.tagName;
-    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'A' || e.target.closest('button, a, input, textarea')) return;
     dragStartY.current = e.touches[0].clientY;
     setDragging(true);
   };
@@ -105,12 +102,15 @@ export default function BottomSheet({ open, onClose, children, title }) {
               background: 'hsl(var(--card))',
               paddingBottom: 'calc(16px + var(--sab, 0px))',
             }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+            {/* Drag handle — only this area initiates drag */}
+            <div
+              className="flex justify-center pt-3 pb-1 flex-shrink-0"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              style={{ touchAction: 'none' }}
+            >
               <div className="w-10 h-1 rounded-full bg-muted" />
             </div>
 
