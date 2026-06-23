@@ -38,6 +38,7 @@ export default function LeaderboardPreview({ allStats = [], settings = [] }) {
           <Trophy className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-muted-foreground">المتصدرين</h3>
         </div>
+        {/* Only show "More" when NOT hidden */}
         <button
           onClick={() => { playTap(); navigate('/leaderboard'); }}
           className="flex items-center gap-1 text-xs text-primary font-medium tap-scale"

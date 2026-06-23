@@ -184,7 +184,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
   const [competitionStartDate, setCompetitionStartDate] = useState(undefined);
   const [countdownDone, setCountdownDone] = useState(false);
   const [escapeWarning, setEscapeWarning] = useState(null); // { count } when showing
-  const [warningDismissed, setWarningDismissed] = useState(false);
   const timerRef = useRef(null);
   const isAdmin = user?.email === ADMIN_EMAIL;
   // Track if currently in active (answering) session
@@ -700,10 +699,10 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
       </AnimatePresence>
 
       {/* Escape warning bottom sheet */}
-      {escapeWarning && !warningDismissed && (
+      {escapeWarning && (
         <EscapeWarningSheet
           warningNumber={escapeWarning.count}
-          onDismiss={() => { setWarningDismissed(true); setEscapeWarning(null); }}
+          onDismiss={() => setEscapeWarning(null)}
         />
       )}
     </div>

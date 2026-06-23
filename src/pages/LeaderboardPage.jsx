@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
@@ -67,11 +67,52 @@ function Podium({ top3, currentUserEmail }) {
   );
 }
 
+function RankedList({ ranked, userEmail }) {
+  if (ranked.length === 0) return (
+    <p className="text-center text-muted-foreground py-8 text-sm">لا يوجد مشتركون بعد</p>
+  );
+  return (
+    <div className="space-y-2">
+      {ranked.map((s, i) => {
+        const isMe = s.user_email === userEmail;
+        const avatarColor = i < 3 ? PODIUM_COLORS[i] : 'hsl(var(--muted))';
+        return (
+          <motion.div key={s.user_email + i}
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.02 }}
+            className={`flex items-center gap-3 p-3.5 rounded-2xl ${isMe ? 'ring-2 ring-primary' : ''}`}
+            style={isMe ? { background: 'hsl(var(--primary)/0.1)' } : { background: 'hsl(var(--secondary))' }}>
+            <div className="w-8 text-center flex-shrink-0">
+              {i < 3
+                ? <span className="text-lg">{MEDALS[i]}</span>
+                : <span className="text-sm font-bold text-muted-foreground">{s._rank}</span>
+              }
+            </div>
+            <Avatar name={s.user_name} size="sm" color={avatarColor} />
+            <span className="flex-1 text-sm font-bold text-foreground truncate">
+              {s.user_name || 'مشترك'}{isMe ? ' (أنت)' : ''}
+            </span>
+            <span className="text-sm font-black flex-shrink-0" style={{ color: 'hsl(var(--primary))' }}>
+              {s.points}
+            </span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+const ADMIN_EMAIL = 'anas6.7q@gmail.com';
+
 export default function LeaderboardPage({ user }) {
   const navigate = useNavigate();
   const [allStats, setAllStats] = useState([]);
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('contestants');
+
+  const isAdmin = user?.email === ADMIN_EMAIL;
+  const userEmail = user?.email || '';
 
   useEffect(() => {
     let cancelled = false;
@@ -89,23 +130,32 @@ export default function LeaderboardPage({ user }) {
     };
     load();
 
+    // Subscribe to real-time stats AND settings (for live lock changes)
     const unsubStats = base44.entities.UserStats.subscribe(() => {
       base44.entities.UserStats.list().then(stats => { if (!cancelled) setAllStats(stats); });
     });
+    const unsubSettings = base44.entities.AppSettings.subscribe(() => {
+      base44.entities.AppSettings.list().then(setts => { if (!cancelled) setSettings(setts); });
+    });
 
-    return () => { cancelled = true; unsubStats(); };
+    return () => { cancelled = true; unsubStats(); unsubSettings(); };
   }, []);
 
+  // Derive lock state from freshly-loaded settings
   const hiddenSetting = settings.find(s => typeof s.leaderboard_hidden === 'boolean');
-  const isHidden = hiddenSetting?.leaderboard_hidden === true;
-  const userEmail = user?.email || '';
+  const isHidden = !isAdmin && hiddenSetting?.leaderboard_hidden === true;
 
-  // Single global ranking — all participants by total_points
-  const ranked = assignRanks(
+  // Build ranked lists per category
+  const makeRanked = (category) => assignRanks(
     allStats
+      .filter(s => s.category === category)
       .map(s => ({ ...s, points: s.total_points || 0 }))
       .sort((a, b) => b.points - a.points)
   );
+
+  const contestantRanked = makeRanked('contestant');
+  const guestRanked = makeRanked('guest');
+  const ranked = tab === 'contestants' ? contestantRanked : guestRanked;
   const top3 = ranked.slice(0, 3);
   const myEntry = ranked.find(s => s.user_email === userEmail);
 
@@ -135,10 +185,29 @@ export default function LeaderboardPage({ user }) {
       ) : (
         <div className="flex-1 overflow-y-auto scroll-ios">
 
-          {/* My rank sticky banner */}
+          {/* Category tabs */}
+          <div className="px-4 pt-4">
+            <div className="flex gap-1 p-1 rounded-2xl bg-secondary">
+              {[
+                { id: 'contestants', label: 'المتسابقون 🏆' },
+                { id: 'guests', label: 'الضيوف 👤' },
+              ].map(t => (
+                <button key={t.id} onClick={() => { playTap(); setTab(t.id); }}
+                  className="flex-1 py-2 rounded-xl text-sm font-bold transition-all tap-scale"
+                  style={{
+                    background: tab === t.id ? 'hsl(var(--primary))' : 'transparent',
+                    color: tab === t.id ? 'white' : 'hsl(var(--muted-foreground))',
+                  }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* My rank banner */}
           {myEntry && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="mx-4 mt-4 p-3 rounded-2xl flex items-center gap-3"
+              className="mx-4 mt-3 p-3 rounded-2xl flex items-center gap-3"
               style={{ background: 'hsl(var(--primary)/0.12)', border: '2px solid hsl(var(--primary)/0.3)' }}>
               <Avatar name={myEntry.user_name} size="sm" color="hsl(var(--primary))" />
               <div className="flex-1 min-w-0">
@@ -153,46 +222,19 @@ export default function LeaderboardPage({ user }) {
           )}
 
           {/* Podium */}
-          <AnimatePresence>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <AnimatePresence mode="wait">
+            <motion.div key={tab} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <Podium top3={top3} currentUserEmail={userEmail} />
             </motion.div>
           </AnimatePresence>
 
-          {/* Full ranked list */}
-          <div className="px-4 pb-8 space-y-2 mt-2">
-            {ranked.length === 0 && (
-              <p className="text-center text-muted-foreground py-8 text-sm">لا يوجد مشتركون بعد</p>
-            )}
-            {ranked.map((s, i) => {
-              const isMe = s.user_email === userEmail;
-              const avatarColor = i < 3 ? PODIUM_COLORS[i] : 'hsl(var(--muted))';
-              return (
-                <motion.div key={s.user_email + i}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.02 }}
-                  className={`flex items-center gap-3 p-3.5 rounded-2xl ${isMe ? 'ring-2 ring-primary' : ''}`}
-                  style={isMe ? { background: 'hsl(var(--primary)/0.1)' } : { background: 'hsl(var(--secondary))' }}>
-                  <div className="w-8 text-center flex-shrink-0">
-                    {i < 3
-                      ? <span className="text-lg">{MEDALS[i]}</span>
-                      : <span className="text-sm font-bold text-muted-foreground">{s._rank}</span>
-                    }
-                  </div>
-                  <Avatar name={s.user_name} size="sm" color={avatarColor} />
-                  <span className="flex-1 text-sm font-bold text-foreground truncate">
-                    {s.user_name || 'مشترك'}{isMe ? ' (أنت)' : ''}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
-                    {s.category === 'contestant' ? '🏆' : '👤'}
-                  </span>
-                  <span className="text-sm font-black flex-shrink-0" style={{ color: 'hsl(var(--primary))' }}>
-                    {s.points}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
+          {/* Full list */}
+          <AnimatePresence mode="wait">
+            <motion.div key={tab + '-list'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
+              className="px-4 pb-8 mt-2">
+              <RankedList ranked={ranked} userEmail={userEmail} />
+            </motion.div>
+          </AnimatePresence>
         </div>
       )}
     </div>

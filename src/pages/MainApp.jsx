@@ -125,7 +125,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           {tab === 'profile' && (
             <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-                <ProfilePage {...sharedProps} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} rulesUrl={rulesUrl} />
+                <ProfilePage {...sharedProps} answers={sharedProps.answers} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} rulesUrl={rulesUrl} />
               </div>
             </PullToRefresh>
           )}
