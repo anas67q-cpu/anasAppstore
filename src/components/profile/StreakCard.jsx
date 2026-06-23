@@ -35,7 +35,7 @@ export default function StreakCard({ streak = 0, answers = [] }) {
             {!isActive && (
               <p className="text-xs text-muted-foreground mt-1">جاوب صح عشان تبدأ السلسلة🔥</p>
             )}
-            <p className="text-xs mt-1" style={{ color: 'hsl(var(--primary))' }}>اضغط للتفاصيل →</p>
+
           </div>
 
           <div className="w-24 h-24 flex items-center justify-center">

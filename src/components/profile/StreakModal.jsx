@@ -14,11 +14,9 @@ const MESSAGES_ACTIVE = [
 ];
 
 const MESSAGES_ZERO = [
-  'ابدأ السلسلة اليوم ولا تأجل 😎',
-  'سؤال واحد صح اليوم ممكن يبدأ مشوار طويل 🔥',
-  'كل المتصدرين بدؤوا من صفر 🚀',
-  'فرصتك تبدأ من الحين وتبني سلسلة قوية 👏',
-  'لا تنتظر بكرة، خل البداية اليوم 🔥',
+  'وعدنا السؤال الجاي يكون البداية 👀',
+  'خذها خطوة خطوة، الأهم تبدأ 🎯',
+  'الجولة القادمة هي فرصتك 💪',
 ];
 
 // Spark particle component
@@ -120,7 +118,7 @@ export default function StreakModal({ streak = 0, answers = [], onClose }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+        className="fixed inset-0 z-[99999] flex items-center justify-center px-4"
         style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}
         onClick={onClose}
       >
@@ -232,11 +230,6 @@ export default function StreakModal({ streak = 0, answers = [], onClose }) {
             <p className="text-xs text-center mb-3" style={{ color: 'rgba(255,255,255,0.4)' }}>هذا الأسبوع</p>
             <WeekRow answers={answers} />
           </motion.div>
-
-          {/* Footer hint */}
-          <p className="text-center text-xs px-6 mb-4" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            كل يوم تجاوب فيه سؤال واحد على الأقل يحافظ على الستريك 🔥
-          </p>
 
           {/* Actions */}
           <div className="px-5 pb-6 space-y-2.5">
