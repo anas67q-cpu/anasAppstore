@@ -182,7 +182,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
   const [launching, setLaunching] = useState(false);
   const [launchAnimData, setLaunchAnimData] = useState(launchAnimCache);
   const [competitionStartDate, setCompetitionStartDate] = useState(undefined);
-  const [countdownDone, setCountdownDone] = useState(false);
   const [escapeWarning, setEscapeWarning] = useState(null); // { count } when showing
   const timerRef = useRef(null);
   const isAdmin = user?.email === ADMIN_EMAIL;
@@ -469,8 +468,8 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
                 <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin"
                   style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
               </div>
-            ) : competitionStartDate !== null && !countdownDone ? (
-              <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => { setCountdownDone(true); setCompetitionStartDate(null); }} />
+            ) : competitionStartDate !== null ? (
+              <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => setCompetitionStartDate(null)} />
             ) : justPassed930 ? (
               <ComingSoonScreen />
             ) : (
