@@ -133,12 +133,12 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
           )}
 
           <button
-            onClick={() => shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl)}
-            disabled={sharing}
+            onTouchEnd={(e) => { e.preventDefault(); if (!sharing) shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl); }}
+            onClick={() => { if (!sharing) shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl); }}
             className="w-full py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
-            style={{ background: 'hsl(var(--primary))', opacity: sharing ? 0.7 : 1 }}>
+            style={{ background: sharing ? 'hsl(var(--primary)/0.7)' : 'hsl(var(--primary))', touchAction: 'manipulation' }}>
             {sharing
-              ? <><div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تحضير البطاقة...</>
+              ? <><div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري التحضير...</>
               : <><Share2 className="w-5 h-5" />نشر بطاقة الشارة</>
             }
           </button>

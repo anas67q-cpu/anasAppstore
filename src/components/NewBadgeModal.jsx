@@ -75,11 +75,13 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
                   className="h-full w-1/3 rounded-full bg-white" />
               </div>
             )}
-            <button onClick={() => shareCard(badge.badge_name, userName, badge, cardTemplateUrl)} disabled={sharing}
-              className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
-              style={{ background: 'hsl(var(--primary))' }}>
+            <button
+              onTouchEnd={(e) => { e.preventDefault(); if (!sharing) shareCard(badge.badge_name, userName, badge, cardTemplateUrl); }}
+              onClick={() => { if (!sharing) shareCard(badge.badge_name, userName, badge, cardTemplateUrl); }}
+              className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 active:scale-95 transition-transform"
+              style={{ background: sharing ? 'hsl(var(--primary)/0.7)' : 'hsl(var(--primary))', touchAction: 'manipulation' }}>
               {sharing
-                ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري النشر...</>
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري التحضير...</>
                 : <><Share2 className="w-4 h-4" />نشر بطاقة الشارة</>
               }
             </button>
