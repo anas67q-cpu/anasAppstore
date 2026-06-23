@@ -32,6 +32,9 @@ export default function BottomSheet({ open, onClose, children, title }) {
   };
 
   const onTouchStart = (e) => {
+    // Don't initiate drag if touching an interactive element
+    const tag = e.target.tagName;
+    if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'A' || e.target.closest('button, a, input, textarea')) return;
     dragStartY.current = e.touches[0].clientY;
     setDragging(true);
   };
