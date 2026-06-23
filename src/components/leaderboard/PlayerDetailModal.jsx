@@ -31,12 +31,17 @@ export default function PlayerDetailModal({ player, onClose }) {
   const wrong = player?.total_wrong || 0;
   const missed = player?.total_missed || 0;
 
-  // Chart: build cumulative from answers but cap final point to match admin-approved total
+  // Chart: use admin-approved total_points, distributed proportionally across answered days
   const chartData = (() => {
+    const approvedTotal = player?.total_points || 0;
+    const answeredWithPoints = answers.filter(a => a.points_earned > 0);
+    const rawTotal = answeredWithPoints.reduce((s, a) => s + (a.points_earned || 0), 0);
+    const ratio = rawTotal > 0 ? approvedTotal / rawTotal : 0;
+
     let cumulative = 0;
     return answers.map(a => {
-      cumulative += a.points_earned || 0;
-      return { day: `${a.day_number}`, points: cumulative };
+      cumulative += (a.points_earned || 0) * ratio;
+      return { day: `${a.day_number}`, points: Math.round(cumulative) };
     });
   })();
 
