@@ -74,8 +74,8 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
 
   useEffect(() => {
     if (earned && ub) {
-      // Pre-render when sheet opens
-      setTimeout(prepareCard, 800);
+      const badgeObj = { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color };
+      setTimeout(() => prepareCard(badgeObj, userName, cardTemplateUrl), 300);
     }
   }, [badge.id]);
 
@@ -132,7 +132,7 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
             </div>
           )}
 
-          <button onClick={() => shareCard(badge.name, userName)} disabled={sharing}
+          <button onClick={() => shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl)} disabled={sharing}
             className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             style={{ background: 'hsl(var(--primary))' }}>
             {sharing
@@ -143,33 +143,7 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
         </>
       )}
 
-      {/* Hidden high-quality card — 320x320 */}
-      {earned && ub && (
-        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
-          <div ref={cardRef} style={{
-            width: 800, height: 800, borderRadius: 48, overflow: 'hidden', position: 'relative',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18,
-            fontFamily: 'Rubik, sans-serif', direction: 'rtl', padding: 60,
-            background: cardTemplateUrl
-              ? `url(${cardTemplateUrl}) center/cover no-repeat`
-              : `linear-gradient(135deg, ${badge.color || '#046B67'} 0%, #034b48 100%)`,
-          }}>
-            {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
-              {badge.icon_url
-                ? <img src={badge.icon_url} alt="" style={{ width: 320, height: 320, objectFit: 'cover' }} crossOrigin="anonymous" />
-                : <div style={{ width: 320, height: 320, borderRadius: 48, background: badge.color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 160 }}>🏅</span>
-                  </div>
-              }
-              <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{badge.name}</div>
-              {badge.description && <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, textAlign: 'center', lineHeight: 1.5, maxWidth: 580 }}>{badge.description}</div>}
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
