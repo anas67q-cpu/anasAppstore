@@ -4,12 +4,10 @@ import { X } from 'lucide-react';
 
 const SPRING_IN  = { type: 'spring', damping: 32, stiffness: 320, mass: 0.8 };
 const SPRING_OUT = { type: 'tween', duration: 0.22, ease: [0.4, 0, 1, 1] };
-const INSTANT    = { type: 'tween', duration: 0 };
 
 export default function BottomSheet({ open, onClose, children, title }) {
   const sheetRef = useRef(null);
   const dragStartY = useRef(null);
-  const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const [closing, setClosing] = useState(false);
 
@@ -27,24 +25,22 @@ export default function BottomSheet({ open, onClose, children, title }) {
   const triggerClose = () => {
     setClosing(true);
     setDragOffset(0);
-    // Let exit animation finish then call onClose
-    setTimeout(onClose, 240);
+    setTimeout(onClose, 220);
   };
 
-  const onTouchStart = (e) => {
+  // Drag only on handle
+  const onHandleTouchStart = (e) => {
     dragStartY.current = e.touches[0].clientY;
-    setDragging(true);
   };
 
-  const onTouchMove = (e) => {
+  const onHandleTouchMove = (e) => {
     if (dragStartY.current === null) return;
     const dy = e.touches[0].clientY - dragStartY.current;
     if (dy > 0) setDragOffset(dy);
   };
 
-  const onTouchEnd = () => {
-    setDragging(false);
-    if (dragOffset > 100) {
+  const onHandleTouchEnd = () => {
+    if (dragOffset > 80) {
       triggerClose();
     } else {
       setDragOffset(0);
@@ -52,16 +48,13 @@ export default function BottomSheet({ open, onClose, children, title }) {
     dragStartY.current = null;
   };
 
-  // Compute animate value: if closing → full screen height so it exits below screen
   const sheetHeight = sheetRef.current?.offsetHeight || 600;
-  const fillerHeight = 72 + 34; // approx sab
-  const exitY = sheetHeight + fillerHeight + 40;
-
-  const animateY = closing ? exitY : dragging ? dragOffset : 0;
-  const transition = dragging ? INSTANT : closing ? SPRING_OUT : SPRING_IN;
+  const exitY = sheetHeight + 140;
+  const animateY = closing ? exitY : dragOffset;
+  const transition = dragOffset > 0 ? { type: 'tween', duration: 0 } : closing ? SPRING_OUT : SPRING_IN;
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       {open && (
         <>
           {/* Backdrop */}
@@ -78,10 +71,10 @@ export default function BottomSheet({ open, onClose, children, title }) {
           {/* Filler behind TabBar */}
           <motion.div
             key="filler"
-            className="fixed inset-x-0 z-[99]"
             initial={{ y: '110%' }}
             animate={{ y: animateY }}
             transition={transition}
+            className="fixed inset-x-0 z-[99]"
             style={{
               bottom: 0,
               height: 'calc(72px + var(--sab, 0px))',
@@ -96,20 +89,20 @@ export default function BottomSheet({ open, onClose, children, title }) {
             initial={{ y: '110%' }}
             animate={{ y: animateY }}
             transition={transition}
-            className="fixed inset-x-0 z-[100] max-h-[78dvh] flex flex-col rounded-t-3xl border-t border-border"
+            className="fixed inset-x-0 z-[100] max-h-[82dvh] flex flex-col rounded-t-3xl border-t border-border"
             style={{
               bottom: 'calc(72px + var(--sab, 0px))',
               background: 'hsl(var(--card))',
               paddingBottom: 'calc(16px + var(--sab, 0px))',
             }}
           >
-            {/* Drag handle — only this area initiates drag */}
+            {/* Drag handle — drag ONLY from here */}
             <div
-              className="flex justify-center pt-3 pb-1 flex-shrink-0"
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
+              className="flex justify-center pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing"
               style={{ touchAction: 'none' }}
+              onTouchStart={onHandleTouchStart}
+              onTouchMove={onHandleTouchMove}
+              onTouchEnd={onHandleTouchEnd}
             >
               <div className="w-10 h-1 rounded-full bg-muted" />
             </div>
@@ -124,12 +117,8 @@ export default function BottomSheet({ open, onClose, children, title }) {
               </div>
             )}
 
-            {/* Scrollable content */}
-            <div
-              className="flex-1 overflow-y-auto scroll-ios px-6 pb-6"
-              style={{ overscrollBehaviorY: 'contain' }}
-              onTouchStart={(e) => e.stopPropagation()}
-            >
+            {/* Scrollable content — NO touch interference */}
+            <div className="flex-1 overflow-y-auto scroll-ios px-6 pb-6">
               {children}
             </div>
           </motion.div>

@@ -133,17 +133,13 @@ function BadgeDetail({ item, allUserBadges, cardTemplateUrl, userName }) {
           )}
 
           <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => {
-              const badgeObj = { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color };
-              shareCard(badge.name, userName, badgeObj, cardTemplateUrl);
-            }}
+            onClick={() => shareCard(badge.name, userName, { badge_name: badge.name, badge_description: badge.description, badge_icon_url: badge.icon_url, badge_color: badge.color }, cardTemplateUrl)}
             disabled={sharing}
-            className="w-full py-3 rounded-xl text-white font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-            style={{ background: 'hsl(var(--primary))' }}>
+            className="w-full py-4 rounded-2xl text-white font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform"
+            style={{ background: 'hsl(var(--primary))', opacity: sharing ? 0.7 : 1 }}>
             {sharing
-              ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري النشر...</>
-              : <><Share2 className="w-4 h-4" />نشر بطاقة الشارة</>
+              ? <><div className="w-5 h-5 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري تحضير البطاقة...</>
+              : <><Share2 className="w-5 h-5" />نشر بطاقة الشارة</>
             }
           </button>
         </>
