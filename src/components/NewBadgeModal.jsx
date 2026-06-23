@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Share2 } from 'lucide-react';
+import { Award } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useShareBadge } from '@/lib/useShareBadge';
 
@@ -12,8 +13,8 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
       setTimeout(() => {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 }, colors: ['#046B67', '#f59e0b', '#fff'] });
       }, 300);
-      // Start preparing card in background immediately
-      prepareCard(badge, userName, cardTemplateUrl);
+      // Start preparing card immediately so it's ready before user taps share
+      prepareCard();
     }
   }, [badge?.id]);
 
@@ -75,19 +76,43 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
                   className="h-full w-1/3 rounded-full bg-white" />
               </div>
             )}
-            <button
-              onTouchEnd={(e) => { e.preventDefault(); if (!sharing) shareCard(badge.badge_name, userName, badge, cardTemplateUrl); }}
-              onClick={() => { if (!sharing) shareCard(badge.badge_name, userName, badge, cardTemplateUrl); }}
-              className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 active:scale-95 transition-transform"
-              style={{ background: sharing ? 'hsl(var(--primary)/0.7)' : 'hsl(var(--primary))', touchAction: 'manipulation' }}>
+            <button onClick={() => shareCard(badge.badge_name, userName)} disabled={sharing}
+              className="w-full py-3.5 rounded-2xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ background: 'hsl(var(--primary))' }}>
               {sharing
-                ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري التحضير...</>
+                ? <><div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />جاري النشر...</>
                 : <><Share2 className="w-4 h-4" />نشر بطاقة الشارة</>
               }
             </button>
           </motion.div>
 
-
+          {/* Hidden high-quality card for export — 320x320 badge icon */}
+          <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+            <div ref={cardRef} style={{
+              width: 800, height: 800, borderRadius: 48, overflow: 'hidden', position: 'relative',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18,
+              fontFamily: 'Rubik, sans-serif', direction: 'rtl', padding: 60,
+              background: cardTemplateUrl
+                ? `url(${cardTemplateUrl}) center/cover no-repeat`
+                : `linear-gradient(135deg, ${badge.badge_color || '#046B67'} 0%, #034b48 100%)`,
+            }}>
+              {!cardTemplateUrl && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.3)' }} />}
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{userName}</div>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 22, textAlign: 'center' }}>حصلت على شارة</div>
+                {badge.badge_icon_url
+                  ? <img src={badge.badge_icon_url} alt="" style={{ width: 320, height: 320, objectFit: 'cover' }} crossOrigin="anonymous" />
+                  : <div style={{ width: 320, height: 320, borderRadius: 48, background: badge.badge_color || '#046B67', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 160 }}>🏅</span>
+                    </div>
+                }
+                <div style={{ color: '#fff', fontSize: 38, fontWeight: 900, textAlign: 'center' }}>{badge.badge_name}</div>
+                {badge.badge_description && (
+                  <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, textAlign: 'center', lineHeight: 1.5, maxWidth: 580 }}>{badge.badge_description}</div>
+                )}
+              </div>
+            </div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
