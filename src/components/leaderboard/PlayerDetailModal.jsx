@@ -26,7 +26,12 @@ export default function PlayerDetailModal({ player, onClose }) {
       });
   }, [player?.user_email]);
 
-  // Build cumulative points chart data
+  // Stats come from UserStats (admin-approved) not raw answers
+  const correct = player?.total_correct || 0;
+  const wrong = player?.total_wrong || 0;
+  const missed = player?.total_missed || 0;
+
+  // Chart: build cumulative from answers but cap final point to match admin-approved total
   const chartData = (() => {
     let cumulative = 0;
     return answers.map(a => {
@@ -34,10 +39,6 @@ export default function PlayerDetailModal({ player, onClose }) {
       return { day: `${a.day_number}`, points: cumulative };
     });
   })();
-
-  const correct = answers.filter(a => a.is_correct).length;
-  const wrong = answers.filter(a => a.user_answer && !a.is_correct).length;
-  const missed = answers.filter(a => !a.user_answer).length;
 
   return (
     <AnimatePresence>
