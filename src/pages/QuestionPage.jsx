@@ -199,8 +199,10 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
     base44.entities.AppSettings.list().then(list => {
       const rec = list.find(s => s.competition_start_date);
       if (rec?.competition_start_date) {
-        const target = new Date(rec.competition_start_date);
-        setCompetitionStartDate(target > new Date() ? rec.competition_start_date : null);
+        // Parse date-only strings as local midnight to avoid UTC offset issues
+        const raw = rec.competition_start_date;
+        const target = raw.includes('T') ? new Date(raw) : new Date(raw + 'T23:59:59');
+        setCompetitionStartDate(target > new Date() ? raw : null);
       } else {
         setCompetitionStartDate(null);
       }
@@ -459,7 +461,7 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
         {(phase === 'waiting' || phase === 'init') && (
           <>
             {competitionStartDate !== undefined && competitionStartDate !== null && !countdownDone ? (
-              <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => setCountdownDone(true)} />
+              <CompetitionCountdown targetDate={competitionStartDate} onExpired={() => { setCountdownDone(true); setCompetitionStartDate(null); }} />
             ) : justPassed930 ? (
               <ComingSoonScreen />
             ) : (
