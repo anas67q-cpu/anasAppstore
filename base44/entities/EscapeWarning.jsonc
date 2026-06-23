@@ -1,0 +1,28 @@
+{
+  "name": "EscapeWarning",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "warning_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_warning_date": {
+      "type": "string"
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "question_day": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

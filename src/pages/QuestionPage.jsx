@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, ArrowRight } from 'lucide-react';
+import { CheckCircle2, XCircle, Lock, Timer, Clock, Send, ArrowRight, AlertTriangle } from 'lucide-react';
 import Lottie from 'lottie-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
@@ -92,6 +92,84 @@ function ComingSoonScreen() {
   );
 }
 
+// Warning bottom sheet shown when user leaves during active question
+function EscapeWarningSheet({ warningNumber, onDismiss }) {
+  const isSecond = warningNumber >= 2;
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] flex items-end justify-center"
+        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}
+      >
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+          className="w-full max-w-lg rounded-t-3xl overflow-hidden"
+          style={{
+            background: isSecond ? '#1a0505' : 'hsl(var(--card))',
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+          }}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full" style={{ background: isSecond ? '#ef444450' : 'hsl(var(--border))' }} />
+          </div>
+
+          <div className="px-6 pt-4 pb-6 space-y-5">
+            {/* Icon */}
+            <div className="flex justify-center">
+              <motion.div
+                animate={{ scale: [1, 1.12, 1], rotate: isSecond ? [0, -5, 5, -5, 0] : [0, -3, 3, 0] }}
+                transition={{ repeat: Infinity, duration: isSecond ? 1.2 : 2, ease: 'easeInOut' }}
+                className="w-20 h-20 rounded-3xl flex items-center justify-center"
+                style={{ background: isSecond ? '#ef444420' : '#f59e0b20' }}
+              >
+                <AlertTriangle className="w-10 h-10" style={{ color: isSecond ? '#ef4444' : '#f59e0b' }} />
+              </motion.div>
+            </div>
+
+            {/* Title */}
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-black" style={{ color: isSecond ? '#ef4444' : '#f59e0b' }}>
+                {isSecond ? 'تحذير أخير ⚠️' : 'قفطناك!! 👀'}
+              </h2>
+              <p className="text-sm leading-relaxed" style={{ color: isSecond ? '#fca5a5' : 'hsl(var(--foreground))' }}>
+                {isSecond
+                  ? 'تم رصد مغادرتك للسؤال أكثر من مرة.\n\nقد تقوم الإدارة بتطبيق عقوبة عليك تصل إلى خصم 5 درجات.\n\nيرجى الالتزام بالتعليمات لتجنب أي إجراءات إدارية.'
+                  : 'لقد غادرت السؤال أثناء وقت الإجابة.\n\nهذا تنبيه أول فقط.\n\nفي حال تكرار هذا السلوك قد تقوم الإدارة بتطبيق عقوبة تصل إلى خصم 5 درجات من رصيدك.\n\nيرجى الالتزام والبقاء داخل السؤال حتى الانتهاء منه.'
+                }
+              </p>
+            </div>
+
+            {/* Warning count badge */}
+            <div className="flex justify-center">
+              <div className="px-4 py-2 rounded-full text-sm font-bold"
+                style={{ background: isSecond ? '#ef444420' : '#f59e0b20', color: isSecond ? '#ef4444' : '#f59e0b' }}>
+                عدد التنبيهات: {warningNumber}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={onDismiss}
+              className="w-full py-4 rounded-2xl font-black text-white text-base"
+              style={{ background: isSecond ? '#ef4444' : '#f59e0b' }}
+            >
+              {isSecond ? 'فهمت وسألتزم' : 'حسناً، فهمت'}
+            </motion.button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
 export default function QuestionPage({ user, stats, questions, answers, setStats, setAnswers, refreshStats }) {
   const navigate = useNavigate();
   const [phase, setPhase] = useState('init');
@@ -105,8 +183,12 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
   const [launchAnimData, setLaunchAnimData] = useState(launchAnimCache);
   const [competitionStartDate, setCompetitionStartDate] = useState(undefined);
   const [countdownDone, setCountdownDone] = useState(false);
+  const [escapeWarning, setEscapeWarning] = useState(null); // { count } when showing
+  const [warningDismissed, setWarningDismissed] = useState(false);
   const timerRef = useRef(null);
   const isAdmin = user?.email === ADMIN_EMAIL;
+  // Track if currently in active (answering) session
+  const isActiveLocked = phase === 'answering' && !selectedAnswer && !essaySent;
 
   useEffect(() => {
     if (!launchAnimCache) {
@@ -126,7 +208,77 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
     });
   }, []);
 
-  // Determine the active question from passed-in questions/answers
+  // ── Navigation lock during active question ──
+  useEffect(() => {
+    if (!isActiveLocked) return;
+
+    // Block browser back button
+    const handlePopState = (e) => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handlePopState);
+
+    // Block beforeunload (tab close / refresh)
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isActiveLocked]);
+
+  // ── Escape detection ──
+  useEffect(() => {
+    if (!isActiveLocked || isAdmin) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) triggerEscapeWarning();
+    };
+    const handleBlur = () => triggerEscapeWarning();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [isActiveLocked, isAdmin]);
+
+  const triggerEscapeWarning = useCallback(async () => {
+    if (!user?.email || isAdmin) return;
+    // Record escape in DB
+    const existing = await base44.entities.EscapeWarning.filter({ user_email: user.email });
+    const now = new Date().toISOString();
+    let newCount;
+    if (existing.length > 0) {
+      const rec = existing[0];
+      newCount = (rec.warning_count || 0) + 1;
+      await base44.entities.EscapeWarning.update(rec.id, {
+        warning_count: newCount,
+        last_warning_date: now,
+        user_name: stats?.user_name || user.full_name || '',
+        question_day: todayQ?.day_number,
+      });
+    } else {
+      newCount = 1;
+      await base44.entities.EscapeWarning.create({
+        user_email: user.email,
+        user_name: stats?.user_name || user.full_name || '',
+        warning_count: 1,
+        last_warning_date: now,
+        question_day: todayQ?.day_number,
+      });
+    }
+    setEscapeWarning({ count: newCount });
+  }, [user, isAdmin, stats]);
+
+  // Determine the active question
   const todayQs = (questions || []).filter(q => q.is_published)
     .sort((a, b) => (a.day_number || 0) - (b.day_number || 0));
 
@@ -279,9 +431,16 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
       {/* Header */}
       <div className="flex items-center gap-3 px-5 flex-shrink-0"
         style={{ background: 'hsl(var(--primary))', paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: '16px', borderRadius: '0 0 24px 24px' }}>
-        <button onClick={() => { playTap(); navigate(-1); }} className="p-2 rounded-full bg-white/20 tap-scale flex-shrink-0">
-          <ArrowRight className="w-5 h-5 text-white" />
-        </button>
+        {/* Back button: disabled + hidden while answering */}
+        {isActiveLocked ? (
+          <div className="p-2 rounded-full opacity-30 flex-shrink-0">
+            <Lock className="w-5 h-5 text-white" />
+          </div>
+        ) : (
+          <button onClick={() => { playTap(); navigate(-1); }} className="p-2 rounded-full bg-white/20 tap-scale flex-shrink-0">
+            <ArrowRight className="w-5 h-5 text-white" />
+          </button>
+        )}
         <h1 className="text-white font-black text-lg flex-1 text-center">
           {todayQ ? `اليوم ${todayQ.day_number}` : 'سؤال اليوم'}
         </h1>
@@ -298,7 +457,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
       {/* Content */}
       <div className="flex-1 overflow-y-auto scroll-ios px-4 pt-5 pb-8">
 
-        {/* Waiting/init */}
         {(phase === 'waiting' || phase === 'init') && (
           <>
             {competitionStartDate !== undefined && competitionStartDate !== null && !countdownDone ? (
@@ -322,7 +480,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
           </>
         )}
 
-        {/* Preview */}
         {phase === 'preview' && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="card-surface shadow-card overflow-hidden mt-2">
@@ -349,10 +506,8 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
           </motion.div>
         )}
 
-        {/* Answering */}
         {phase === 'answering' && !todayA && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 mt-2">
-            {/* Timer bar */}
             <div className="card-surface shadow-card p-4 space-y-2">
               <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-1000"
@@ -360,7 +515,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
               </div>
             </div>
 
-            {/* Question */}
             <div className="card-surface shadow-card p-5 space-y-3">
               {todayQ?.image_url && (
                 <img src={todayQ.image_url} alt="صورة السؤال"
@@ -370,7 +524,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
               <p className="text-base font-bold leading-relaxed text-foreground">{todayQ?.text}</p>
             </div>
 
-            {/* MC options */}
             {todayQ?.type === 'multiple_choice' && (
               <div className="space-y-2.5">
                 {todayQ.options?.map((opt, i) => {
@@ -406,7 +559,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
               </div>
             )}
 
-            {/* TF options */}
             {todayQ?.type === 'true_false' && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
@@ -440,7 +592,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
               </div>
             )}
 
-            {/* Essay */}
             {todayQ?.type === 'essay' && (
               <div className="space-y-3">
                 {!essaySent ? (
@@ -465,7 +616,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
               </div>
             )}
 
-            {/* Feedback */}
             {selectedAnswer !== null && todayQ?.type !== 'essay' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 className="p-4 rounded-2xl text-center"
@@ -482,7 +632,6 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
           </motion.div>
         )}
 
-        {/* Result */}
         {phase === 'result' && (
           <div className="space-y-4 mt-2">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -549,6 +698,14 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
           <LaunchOverlay animationData={launchAnimData} onComplete={() => { setLaunching(false); doStartAnswering(); }} />
         )}
       </AnimatePresence>
+
+      {/* Escape warning bottom sheet */}
+      {escapeWarning && !warningDismissed && (
+        <EscapeWarningSheet
+          warningNumber={escapeWarning.count}
+          onDismiss={() => { setWarningDismissed(true); setEscapeWarning(null); }}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
-import { ArrowRight, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock, Bell, Trophy } from 'lucide-react';
+import { ArrowRight, FileQuestion, Users, Image, Award, BookOpen, Info, MessageSquare, ClipboardList, Activity, Lock, Unlock, Bell, Trophy, AlertTriangle } from 'lucide-react';
 import QuestionManager from '@/components/admin/QuestionManager';
 import UserManager from '@/components/admin/UserManager';
 import ImageManager from '@/components/admin/ImageManager';
@@ -13,6 +13,7 @@ import AnswerViewer from '@/components/admin/AnswerViewer';
 import ActivityLogViewer from '@/components/admin/ActivityLogViewer';
 import NotificationsManager from '@/components/admin/NotificationsManager';
 import RoundQuestionsManager from '@/components/admin/RoundQuestionsManager';
+import WarningsManager from '@/components/admin/WarningsManager';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 
@@ -28,6 +29,7 @@ const SECTIONS = [
   { id: 'info', label: 'معلومات المسابقة', sub: 'تعديل الوصف والشعار', icon: Info, color: '#0ea5e9' },
   { id: 'notifications', label: 'الإشعارات', sub: 'نصوص رسائل التنبيهات لكل حدث', icon: Bell, color: '#046B67' },
   { id: 'round-questions', label: 'أسئلة الجولة', sub: 'أسئلة جولة مسابقة أنس العام الماضي', icon: Trophy, color: '#f59e0b' },
+  { id: 'warnings', label: 'تنبيهات المغادرة', sub: 'رصد مغادرة الأسئلة أثناء الإجابة', icon: AlertTriangle, color: '#ef4444' },
 ];
 
 function AdminHome() {
@@ -154,6 +156,7 @@ export default function AdminDashboard() {
           <Route path="/info" element={<AnimatedPage><CompetitionInfoManager /></AnimatedPage>} />
           <Route path="/notifications" element={<AnimatedPage><NotificationsManager /></AnimatedPage>} />
           <Route path="/round-questions" element={<AnimatedPage><RoundQuestionsManager /></AnimatedPage>} />
+          <Route path="/warnings" element={<AnimatedPage><WarningsManager /></AnimatedPage>} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </AnimatePresence>
