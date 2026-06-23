@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { playTap } from '@/lib/sounds';
 import LeaderboardLockedBanner from '@/components/home/LeaderboardLockedBanner';
+import PlayerDetailModal from '@/components/leaderboard/PlayerDetailModal';
 
 const PODIUM_COLORS = ['#f59e0b', '#94a3b8', '#cd7c2f'];
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -67,7 +68,7 @@ function Podium({ top3, currentUserEmail }) {
   );
 }
 
-function RankedList({ ranked, userEmail }) {
+function RankedList({ ranked, userEmail, onPlayerClick }) {
   if (ranked.length === 0) return (
     <p className="text-center text-muted-foreground py-8 text-sm">لا يوجد مشتركون بعد</p>
   );
@@ -80,7 +81,8 @@ function RankedList({ ranked, userEmail }) {
           <motion.div key={s.user_email + i}
             initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.02 }}
-            className={`flex items-center gap-3 p-3.5 rounded-2xl ${isMe ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => { playTap(); onPlayerClick(s); }}
+            className={`flex items-center gap-3 p-3.5 rounded-2xl tap-scale cursor-pointer ${isMe ? 'ring-2 ring-primary' : ''}`}
             style={isMe ? { background: 'hsl(var(--primary)/0.1)' } : { background: 'hsl(var(--secondary))' }}>
             <div className="w-8 text-center flex-shrink-0">
               {i < 3
@@ -110,6 +112,7 @@ export default function LeaderboardPage({ user }) {
   const [settings, setSettings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('contestants');
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
 
   const isAdmin = user?.email === ADMIN_EMAIL;
   const userEmail = user?.email || '';
@@ -232,10 +235,13 @@ export default function LeaderboardPage({ user }) {
           <AnimatePresence mode="wait">
             <motion.div key={tab + '-list'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
               className="px-4 pb-8 mt-2">
-              <RankedList ranked={ranked} userEmail={userEmail} />
+              <RankedList ranked={ranked} userEmail={userEmail} onPlayerClick={setSelectedPlayer} />
             </motion.div>
           </AnimatePresence>
         </div>
+      )}
+      {selectedPlayer && (
+        <PlayerDetailModal player={selectedPlayer} onClose={() => setSelectedPlayer(null)} />
       )}
     </div>
   );

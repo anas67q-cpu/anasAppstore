@@ -1,23 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StreakFlame from '@/components/challenge/StreakFlame';
 import { playTap } from '@/lib/sounds';
 
 const DAYS_AR = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
 
-const MESSAGES_ACTIVE = [
-  'ما شاء الله عليك، السلسلة شغالة بقوة 🔥',
-  'واضح إنك داخل جو المنافسة 😎',
-  'يوم جديد يعني فرصة تزيد الستريك أكثر 🚀',
-  'لا تخلي السلسلة تنقطع، باقي لك الكثير 👏',
-  'استمر على نفس المستوى، أمورك ممتازة 🔥',
-];
 
-const MESSAGES_ZERO = [
-  'وعدنا السؤال الجاي يكون البداية 👀',
-  'خذها خطوة خطوة، الأهم تبدأ 🎯',
-  'الجولة القادمة هي فرصتك 💪',
-];
 
 // Spark particle component
 function Spark({ delay, angle, distance }) {
@@ -101,10 +89,6 @@ function WeekRow({ answers }) {
 }
 
 export default function StreakModal({ streak = 0, answers = [], onClose }) {
-  const [msg] = useState(() => {
-    const list = streak > 0 ? MESSAGES_ACTIVE : MESSAGES_ZERO;
-    return list[Math.floor(Math.random() * list.length)];
-  });
 
   const sparks = Array.from({ length: 10 }, (_, i) => ({
     delay: i * 0.22,
@@ -203,20 +187,12 @@ export default function StreakModal({ streak = 0, answers = [], onClose }) {
               style={{ color: 'rgba(255,255,255,0.65)' }}
             >
               {streak > 0
-                ? `مستمر بالإجابات من ${streak} يوم، لا توقف الحين وخلك محافظ على السلسلة.`
+                ? `مستمر بالإجابات الصحيحة حتى يوم ${streak}، لا توقف وخلك محافظ على السلسلة.`
                 : 'تو ما بدت سلسلة اجاباتك، وعدنا السؤال الجاي 👀'
               }
             </motion.p>
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-xs text-center mt-2 px-2"
-              style={{ color: 'rgba(255,255,255,0.45)' }}
-            >
-              {msg}
-            </motion.p>
+
           </div>
 
           {/* Week tracker */}

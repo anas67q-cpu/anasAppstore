@@ -12,7 +12,7 @@ import { playTap } from '@/lib/sounds';
 import NotificationSettings from '@/components/profile/NotificationSettings';
 import CompetitionRulesCard from '@/components/profile/CompetitionRulesCard';
 
-export default function ProfilePage({ user, stats, answers, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] , rulesUrl }) {
+export default function ProfilePage({ user, stats, answers, allStats, userBadges, allBadges = [], allUserBadges = [], updateUserName, fetchAllStats, cardTemplateUrl, streakLogoUrl, userName, settings = [] , rulesUrl, onStreakOpen }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -66,7 +66,7 @@ export default function ProfilePage({ user, stats, answers, allStats, userBadges
 
       <NameEditor userName={user?.full_name} statsName={stats?.user_name} onSave={updateUserName} />
 
-      <StreakCard streak={stats?.current_streak || 0} answers={answers || []} />
+      <StreakCard streak={stats?.current_streak || 0} onOpen={onStreakOpen} />
 
       <BadgesSection
         allBadges={allBadges}

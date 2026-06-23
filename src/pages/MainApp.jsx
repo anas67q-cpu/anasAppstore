@@ -19,6 +19,7 @@ import { playTap } from '@/lib/sounds';
 import LeaderboardPage from '@/pages/LeaderboardPage';
 import TourPage from '@/pages/TourPage';
 import QuestionPage from '@/pages/QuestionPage';
+import StreakModal from '@/components/profile/StreakModal';
 
 const TAB_ORDER = ['home', 'challenge', 'profile'];
 
@@ -71,7 +72,7 @@ function PullToRefresh({ onRefresh, children, scrollRef, refreshing }) {
 }
 
 // Shell that keeps all tabs mounted (preserves scroll + state)
-function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing, rulesUrl, onRoundOpen }) {
+function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, setStats, setAnswers, refreshStats, settings, refreshing, rulesUrl, onRoundOpen, onStreakOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
   const scrollRefs = { home: useRef(null), challenge: useRef(null), profile: useRef(null) };
@@ -125,7 +126,7 @@ function TabShell({ sharedProps, handleRefresh, updateUserName, fetchAllStats, s
           {tab === 'profile' && (
             <PullToRefresh onRefresh={handleRefresh} scrollRef={scrollRefs.profile} refreshing={refreshing}>
               <div className="px-4 pt-4" style={{ paddingBottom: 'calc(100px + var(--sab, 0px))' }}>
-                <ProfilePage {...sharedProps} answers={sharedProps.answers} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} rulesUrl={rulesUrl} />
+                <ProfilePage {...sharedProps} answers={sharedProps.answers} updateUserName={updateUserName} fetchAllStats={fetchAllStats} settings={settings} rulesUrl={rulesUrl} onStreakOpen={() => onStreakOpen(true)} />
               </div>
             </PullToRefresh>
           )}
@@ -151,6 +152,7 @@ export default function MainApp({ overlayPage }) {
   const [refreshing, setRefreshing] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [roundOpen, setRoundOpen] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -260,6 +262,9 @@ export default function MainApp({ overlayPage }) {
         <QuestionPage user={user} stats={stats} questions={questions} answers={answers} setStats={setStats} setAnswers={setAnswers} refreshStats={refreshStats} />
       )}
       <NewBadgeModal badge={newBadgeNotif} userName={userName} cardTemplateUrl={cardTemplateUrl} onClose={() => setNewBadgeNotif(null)} />
+      {showStreakModal && (
+        <StreakModal streak={stats?.current_streak || 0} answers={answers || []} onClose={() => setShowStreakModal(false)} />
+      )}
       {user && <TermsModal rulesUrl={rulesUrl} onAcceptTerms={() => setShowWelcome(true)} />}
       <WelcomeModal userName={displayName} show={showWelcome} onClose={() => setShowWelcome(false)} />
 
@@ -332,6 +337,7 @@ export default function MainApp({ overlayPage }) {
             refreshing={refreshing}
             rulesUrl={rulesUrl}
             onRoundOpen={setRoundOpen}
+            onStreakOpen={setShowStreakModal}
           />
         } />
       </Routes>

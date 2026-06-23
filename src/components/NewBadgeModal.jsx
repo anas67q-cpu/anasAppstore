@@ -13,8 +13,8 @@ export default function NewBadgeModal({ badge, userName, cardTemplateUrl, onClos
       setTimeout(() => {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 }, colors: ['#046B67', '#f59e0b', '#fff'] });
       }, 300);
-      // Pre-render card in background after a short delay for images to load
-      setTimeout(prepareCard, 1200);
+      // Start preparing card immediately so it's ready before user taps share
+      prepareCard();
     }
   }, [badge?.id]);
 
