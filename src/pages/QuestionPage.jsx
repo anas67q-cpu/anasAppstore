@@ -199,10 +199,13 @@ export default function QuestionPage({ user, stats, questions, answers, setStats
     base44.entities.AppSettings.list().then(list => {
       const rec = list.find(s => s.competition_start_date);
       if (rec?.competition_start_date) {
-        // Parse date-only strings as local midnight to avoid UTC offset issues
         const raw = rec.competition_start_date;
-        const target = raw.includes('T') ? new Date(raw) : new Date(raw + 'T23:59:59');
-        setCompetitionStartDate(target > new Date() ? raw : null);
+        // Always parse as local time: date-only strings (YYYY-MM-DD) become start of that day locally
+        // by appending T00:00:00 (no Z), so no UTC offset shift
+        const localDateStr = raw.includes('T') ? raw : raw + 'T00:00:00';
+        const target = new Date(localDateStr);
+        // Store the resolved full ISO string so CompetitionCountdown gets a precise timestamp
+        setCompetitionStartDate(target > new Date() ? localDateStr : null);
       } else {
         setCompetitionStartDate(null);
       }
