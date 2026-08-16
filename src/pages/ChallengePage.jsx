@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { playTap } from '@/lib/sounds';
 import { base44 } from '@/api/base44Client';
 import CompetitionCountdown from '@/components/challenge/CompetitionCountdown';
+import { APP_ASSETS } from '@/lib/appAssets';
 
 export default function ChallengePage({ user, stats, questions, answers, setStats, setAnswers, refreshStats, onRoundOpen }) {
   const navigate = useNavigate();
@@ -14,8 +15,8 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
   useEffect(() => {
     base44.entities.AppSettings.list().then(list => {
       const rec = list.find(s => s.competition_start_date);
-      if (rec?.competition_start_date) {
-        const raw = rec.competition_start_date;
+      const raw = rec?.competition_start_date || APP_ASSETS.competition_start_date;
+      if (raw) {
         const localDateStr = raw.includes('T') ? raw : raw + 'T00:00:00';
         const target = new Date(localDateStr);
         setCompetitionStartDate(target > new Date() ? localDateStr : null);

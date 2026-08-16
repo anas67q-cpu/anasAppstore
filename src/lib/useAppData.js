@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { preloadImages } from '@/lib/imageCache';
+import { withAssetDefaults, APP_ASSETS } from '@/lib/appAssets';
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
@@ -80,7 +81,8 @@ export default function useAppData() {
 
   const fetchSettings = useCallback(async () => {
     if (!shouldRefetch('settings') && cache.settings?.length) return cache.settings;
-    const s = await base44.entities.AppSettings.list();
+    const raw = await base44.entities.AppSettings.list();
+    const s = raw.map(withAssetDefaults);
     cache.settings = s; cache.lastFetch.settings = Date.now();
     if (mounted.current) setSettings(s);
     // Pre-cache competition logo and card template persistently
