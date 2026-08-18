@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import LandingPage from './pages/LandingPage';
 import MainApp from './pages/MainApp';
 import LeaderboardPage from './pages/LeaderboardPage';
 import TourPage from './pages/TourPage';
@@ -28,9 +29,8 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
+      // Show landing page for unauthenticated users; login triggered from its buttons
+      return <LandingPage />;
     }
   }
 
