@@ -30,6 +30,15 @@ export const ASSET_FIELDS = [
   "card_template",
 ];
 
+// Kick off preloading of all fixed asset URLs immediately at module import
+// (happens at app startup, before any UI renders) so images load from cache
+// instantly and their HTTP fetch begins as early as possible.
+const _allAssetUrls = Object.values(APP_ASSETS).filter(Boolean);
+// Fast path: prime browser HTTP cache right away (no await needed).
+_allAssetUrls.forEach((url) => { const img = new Image(); img.src = url; });
+// Persistent path: store in Cache Storage API for instant future loads.
+import('@/lib/imageCache').then(({ preloadImages }) => preloadImages(_allAssetUrls)).catch(() => {});
+
 // Apply fixed-asset fallbacks to a settings record (mutates a copy).
 export function withAssetDefaults(record) {
   if (!record) return record;
