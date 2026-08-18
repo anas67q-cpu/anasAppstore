@@ -75,7 +75,7 @@ export default function LandingPage() {
                 className="w-11 h-11 rounded-2xl object-cover"
                 style={{ background: 'rgba(255,255,255,0.15)' }} />
               <div>
-                <h1 className="text-white font-black text-lg leading-tight">مسابقة أنس</h1>
+                <h1 className="text-white font-black text-lg leading-tight font-heading">مسابقة أنس</h1>
                 <p className="text-white/70 text-xs">النسخة التاسعة · رمضان ١٤٤٨هـ</p>
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function LandingPage() {
               🌙 تجربة رمضانية تنافسية
             </motion.p>
             <motion.h2 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-              className="text-white font-black text-3xl leading-snug">
+              className="text-white font-black text-3xl leading-snug font-heading">
               سؤال في كل يوم<br />
               <span className="text-amber-300">حتى نهاية الشهر</span>
             </motion.h2>
@@ -139,7 +139,7 @@ export default function LandingPage() {
 
       {/* Features */}
       <section className="px-4 pt-9 max-w-md mx-auto">
-        <h3 className="text-lg font-black text-foreground">لماذا مسابقة أنس؟</h3>
+        <h3 className="text-lg font-black text-foreground font-heading">لماذا مسابقة أنس؟</h3>
         <p className="text-sm text-muted-foreground mt-1 mb-5">تجربة تنافسية مصمّمة بعناية للمشاركة اليومية</p>
         <div className="grid grid-cols-2 gap-3">
           {FEATURES.map((f, i) => (
@@ -161,7 +161,7 @@ export default function LandingPage() {
 
       {/* Steps */}
       <section className="px-4 pt-9 max-w-md mx-auto">
-        <h3 className="text-lg font-black text-foreground">كيف تبدأ؟</h3>
+        <h3 className="text-lg font-black text-foreground font-heading">كيف تبدأ؟</h3>
         <p className="text-sm text-muted-foreground mt-1 mb-5">ثلاث خطوات بسيطة للمشاركة</p>
         <div className="space-y-3">
           {STEPS.map((s, i) => (
@@ -188,7 +188,7 @@ export default function LandingPage() {
           <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-white/10" />
           <div className="relative">
             <Trophy className="w-10 h-10 text-amber-300 mx-auto mb-3" />
-            <h3 className="text-white font-black text-lg">جاهز للمنافسة؟</h3>
+            <h3 className="text-white font-black text-lg font-heading">جاهز للمنافسة؟</h3>
             <p className="text-white/75 text-sm mt-1 mb-4">سجّل دخولك وانضم لآلاف المشاركين في المسابقة الرمضانية</p>
             <button onClick={goLogin} whileTap={{ scale: 0.96 }}
               className="w-full py-3.5 rounded-2xl text-base font-black tap-scale flex items-center justify-center gap-2"

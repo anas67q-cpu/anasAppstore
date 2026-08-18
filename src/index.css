@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800;900&display=swap');
+@import url("https://cdn.jsdelivr.net/npm/@dawod/thmanyah-font-web/index.css");
 
 @tailwind base;
 @tailwind components;
@@ -9,7 +9,9 @@
   :root {
     --sat: env(safe-area-inset-top);
     --sab: env(safe-area-inset-bottom);
-    --font-rubik: 'Rubik', sans-serif;
+    --font-rubik: "Thmanyah Sans", sans-serif;
+    --font-heading: "Thmanyah Serif Display", serif;
+    --font-display: "Thmanyah Sans", sans-serif;
     --background: 0 0% 96%;
     --foreground: 0 0% 8%;
     --card: 0 0% 100%;

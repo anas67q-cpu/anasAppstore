@@ -20,6 +20,8 @@ module.exports = {
   	},
       fontFamily: {
         rubik: ['var(--font-rubik)'],
+        heading: ['var(--font-heading)'],
+        display: ['var(--font-display)'],
       },
   		borderRadius: {
   			lg: 'var(--radius)',

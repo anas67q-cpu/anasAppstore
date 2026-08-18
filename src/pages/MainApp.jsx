@@ -283,7 +283,7 @@ export default function MainApp({ overlayPage }) {
             )}
             <div>
               <p className="text-white/70 text-xs">يا هلا ومرحبا،</p>
-              <p className="text-white text-xl font-black">{displayName} 👋</p>
+              <p className="text-white text-xl font-black font-heading">{displayName} 👋</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

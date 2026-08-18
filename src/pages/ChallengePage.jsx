@@ -49,7 +49,7 @@ export default function ChallengePage({ user, stats, questions, answers, setStat
 
   return (
     <div className="space-y-5 pb-6">
-      <h2 className="text-xl font-bold text-foreground">
+      <h2 className="text-xl font-bold text-foreground font-heading">
         سؤال اليوم{publishedQs.length > 1 ? ` (${publishedQs.length} أسئلة)` : ''}
       </h2>
 
