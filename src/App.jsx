@@ -13,7 +13,7 @@ import QuestionPage from './pages/QuestionPage';
 // Add page imports here
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -32,6 +32,11 @@ const AuthenticatedApp = () => {
       // Show landing page for unauthenticated users; login triggered from its buttons
       return <LandingPage />;
     }
+  }
+
+  // Not authenticated yet (no token) — show landing page as the entry point
+  if (!isAuthenticated) {
+    return <LandingPage />;
   }
 
   // Render the main app
