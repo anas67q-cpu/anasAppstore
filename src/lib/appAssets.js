@@ -28,13 +28,13 @@ export const APP_ASSETS = {
 // Applies to both Badge records (icon_url) and UserBadge records (badge_icon_url).
 export const BADGE_ICONS = {
   "هيمنة": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/b03848f6d_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "حامل اللقب": FILE_PREFIX + "48b76a083_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "بطل الصدارة": FILE_PREFIX + "cbc3eb603_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "حامل اللقب": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/2d9c70379_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "بطل الصدارة": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/0d806a436_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "نجم النصف الأول": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/052e2865d_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "بطل السلسلة": FILE_PREFIX + "3c99a195b_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "الرقم القياسي": FILE_PREFIX + "f417f62b7_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "الخطأ الأول": FILE_PREFIX + "f5fc4c6a0_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "الإجابة الأولى بالمسابقة": FILE_PREFIX + "20ab60316_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "بطل السلسلة": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/60402b6f4_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الرقم القياسي": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/b7efa567c_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الخطأ الأول": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/90d7e18c1_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الإجابة الأولى بالمسابقة": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/799645256_GreenandBlackPlayfulFrogCostumeAvatar.png",
 };
 
 // Fields that should fall back to fixed assets when the DB value is empty.
