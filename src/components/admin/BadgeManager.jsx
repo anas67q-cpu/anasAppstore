@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Plus, Trash2, Award, Upload, Search, Tag, Users } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, Award, Search, Tag, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import { BADGE_ICONS, withBadgeIconDefaults } from '@/lib/appAssets';
 import BottomSheet from '@/components/BottomSheet';
 import NativeSelect from '@/components/ui/NativeSelect';
 import { playTap } from '@/lib/sounds';
@@ -26,8 +27,8 @@ export default function BadgeManager() {
       base44.entities.UserBadge.list('-created_date', 200),
       base44.entities.UserStats.list('-total_points', 200),
     ]);
-    setBadges(b);
-    setUserBadges(ub);
+    setBadges(b.map(withBadgeIconDefaults));
+    setUserBadges(ub.map(withBadgeIconDefaults));
     setUsers(u);
     setLoading(false);
   };
@@ -156,32 +157,16 @@ function NewBadgeForm({ onSaved }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [color, setColor] = useState('#046B67');
-  const [iconUrl, setIconUrl] = useState('');
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  const [uploadError, setUploadError] = useState('');
-
-  const handleUpload = async (file) => {
-    setUploadError('');
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError('حجم الصورة كبير جداً (الحد الأقصى 5MB)');
-      return;
-    }
-    setUploading(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setIconUrl(file_url);
-    } catch (e) {
-      setUploadError('فشل رفع الصورة، حاول مرة أخرى');
-    }
-    setUploading(false);
-  };
 
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    await base44.entities.Badge.create({ name, description: desc, icon_url: iconUrl, color });
+    // Icon is resolved from fixed code assets by badge name (no admin upload).
+    await base44.entities.Badge.create({
+      name, description: desc, color,
+      icon_url: BADGE_ICONS[name] || '',
+    });
     setSaving(false);
     onSaved();
   };
@@ -203,13 +188,12 @@ function NewBadgeForm({ onSaved }) {
           <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-full h-10 rounded-xl border border-border cursor-pointer" />
         </div>
         <div className="flex-1">
-          <label className="text-xs text-muted-foreground mb-1 block">أيقونة</label>
-          <label className="flex items-center justify-center gap-2 h-10 rounded-xl bg-secondary text-sm cursor-pointer tap-scale">
-            {uploading ? <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'hsl(var(--primary))', borderTopColor: 'transparent' }} />
-              : iconUrl ? '✅ رُفعت' : <><Upload className="w-4 h-4" /> رفع</>}
-            <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && handleUpload(e.target.files[0])} />
-          </label>
-          {uploadError && <p className="text-xs text-destructive mt-1">{uploadError}</p>}
+          <label className="text-xs text-muted-foreground mb-1 block">معاينة الأيقونة</label>
+          <div className="flex items-center justify-center h-10 rounded-xl bg-secondary overflow-hidden">
+            {BADGE_ICONS[name]
+              ? <img src={BADGE_ICONS[name]} alt="" className="w-8 h-8 object-contain" />
+              : <span className="text-xs text-muted-foreground">تختار تلقائيًا بالاسم</span>}
+          </div>
         </div>
       </div>
       <button onClick={handleSave} disabled={saving || !name.trim()}

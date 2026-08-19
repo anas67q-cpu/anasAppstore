@@ -27,10 +27,10 @@ export const APP_ASSETS = {
 // Persistent defaults for badge icon images, keyed by badge name.
 // Applies to both Badge records (icon_url) and UserBadge records (badge_icon_url).
 export const BADGE_ICONS = {
-  "هيمنة": FILE_PREFIX + "3358e6bbe_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "هيمنة": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/b03848f6d_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "حامل اللقب": FILE_PREFIX + "48b76a083_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "بطل الصدارة": FILE_PREFIX + "cbc3eb603_GreenandBlackPlayfulFrogCostumeAvatar.png",
-  "نجم النصف الأول": FILE_PREFIX + "3d0d779c4_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "نجم النصف الأول": "https://media.base44.com/images/public/69daa39f99dd53afa074a17a/052e2865d_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "بطل السلسلة": FILE_PREFIX + "3c99a195b_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "الرقم القياسي": FILE_PREFIX + "f417f62b7_GreenandBlackPlayfulFrogCostumeAvatar.png",
   "الخطأ الأول": FILE_PREFIX + "f5fc4c6a0_GreenandBlackPlayfulFrogCostumeAvatar.png",
