@@ -1,5 +1,11 @@
 // Fixed app assets — admin-set images persisted as code constants.
 // These act as permanent defaults so images always show even if DB records lose their values.
+// DB values override these defaults whenever present.
+
+// Common file-host prefix for competition assets hosted on Base44 storage.
+const FILE_PREFIX =
+  "https://base44.app/api/apps/69daa39f99dd53afa074a17a/files/mp/public/69daa39f99dd53afa074a17a/";
+
 export const APP_ASSETS = {
   competition_logo:
     "https://base44.app/api/apps/69daa39f99dd53afa074a17a/files/mp/public/69daa39f99dd53afa074a17a/f794598b0_GreenandBlackPlayfulFrogCostumeAvatar.png",
@@ -18,6 +24,19 @@ export const APP_ASSETS = {
     "https://base44.app/api/apps/69daa39f99dd53afa074a17a/files/mp/public/69daa39f99dd53afa074a17a/65996b9bb_GreenandBlackPlayfulFrogCostumeAvatar.png",
 };
 
+// Persistent defaults for badge icon images, keyed by badge name.
+// Applies to both Badge records (icon_url) and UserBadge records (badge_icon_url).
+export const BADGE_ICONS = {
+  "هيمنة": FILE_PREFIX + "3358e6bbe_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "حامل اللقب": FILE_PREFIX + "48b76a083_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "بطل الصدارة": FILE_PREFIX + "cbc3eb603_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "نجم النصف الأول": FILE_PREFIX + "3d0d779c4_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "بطل السلسلة": FILE_PREFIX + "3c99a195b_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الرقم القياسي": FILE_PREFIX + "f417f62b7_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الخطأ الأول": FILE_PREFIX + "f5fc4c6a0_GreenandBlackPlayfulFrogCostumeAvatar.png",
+  "الإجابة الأولى بالمسابقة": FILE_PREFIX + "20ab60316_GreenandBlackPlayfulFrogCostumeAvatar.png",
+};
+
 // Fields that should fall back to fixed assets when the DB value is empty.
 export const ASSET_FIELDS = [
   "competition_logo",
@@ -33,7 +52,7 @@ export const ASSET_FIELDS = [
 // Kick off preloading of all fixed asset URLs immediately at module import
 // (happens at app startup, before any UI renders) so images load from cache
 // instantly and their HTTP fetch begins as early as possible.
-const _allAssetUrls = Object.values(APP_ASSETS).filter(Boolean);
+const _allAssetUrls = [...Object.values(APP_ASSETS), ...Object.values(BADGE_ICONS)].filter(Boolean);
 // Fast path: prime browser HTTP cache right away (no await needed).
 _allAssetUrls.forEach((url) => { const img = new Image(); img.src = url; });
 // Persistent path: store in Cache Storage API for instant future loads.
@@ -46,5 +65,17 @@ export function withAssetDefaults(record) {
   ASSET_FIELDS.forEach((f) => {
     if (!merged[f] && APP_ASSETS[f]) merged[f] = APP_ASSETS[f];
   });
+  return merged;
+}
+
+// Apply badge icon fallbacks to a Badge or UserBadge record (DB value wins when present).
+// Badge records use { name, icon_url }; UserBadge records use { badge_name, badge_icon_url }.
+export function withBadgeIconDefaults(record) {
+  if (!record) return record;
+  const merged = { ...record };
+  const name = merged.name || merged.badge_name;
+  if (!name) return merged;
+  if (!merged.icon_url && BADGE_ICONS[name]) merged.icon_url = BADGE_ICONS[name];
+  if (!merged.badge_icon_url && BADGE_ICONS[name]) merged.badge_icon_url = BADGE_ICONS[name];
   return merged;
 }

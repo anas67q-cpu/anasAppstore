@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { preloadImages } from '@/lib/imageCache';
-import { withAssetDefaults, APP_ASSETS } from '@/lib/appAssets';
+import { withAssetDefaults, withBadgeIconDefaults, APP_ASSETS } from '@/lib/appAssets';
 
 const ADMIN_EMAIL = 'anas6.7q@gmail.com';
 
@@ -92,7 +92,7 @@ export default function useAppData() {
 
   const fetchUserBadges = useCallback(async (email) => {
     if (!shouldRefetch('userBadges') && cache.userBadges) return cache.userBadges;
-    const b = await base44.entities.UserBadge.filter({ user_email: email });
+    const b = (await base44.entities.UserBadge.filter({ user_email: email })).map(withBadgeIconDefaults);
     cache.userBadges = b; cache.lastFetch.userBadges = Date.now();
     if (mounted.current) setUserBadges(b);
     return b;
@@ -100,7 +100,7 @@ export default function useAppData() {
 
   const fetchAllBadges = useCallback(async () => {
     if (!shouldRefetch('allBadges') && cache.allBadges?.length) return cache.allBadges;
-    const b = await base44.entities.Badge.list('-created_date', 100);
+    const b = (await base44.entities.Badge.list('-created_date', 100)).map(withBadgeIconDefaults);
     cache.allBadges = b; cache.lastFetch.allBadges = Date.now();
     if (mounted.current) setAllBadges(b);
     // Pre-cache all badge images persistently
@@ -110,7 +110,7 @@ export default function useAppData() {
 
   const fetchAllUserBadges = useCallback(async () => {
     if (!shouldRefetch('allUserBadges') && cache.allUserBadges?.length) return cache.allUserBadges;
-    const b = await base44.entities.UserBadge.list('-created_date', 500);
+    const b = (await base44.entities.UserBadge.list('-created_date', 500)).map(withBadgeIconDefaults);
     cache.allUserBadges = b; cache.lastFetch.allUserBadges = Date.now();
     if (mounted.current) setAllUserBadges(b);
     return b;
